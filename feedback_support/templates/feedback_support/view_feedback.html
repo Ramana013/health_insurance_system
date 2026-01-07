@@ -1,0 +1,133 @@
+<!-- templates/feedback_support/view_feedback.html -->
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    {% include 'users/includes/sidebar.html' %}
+
+    <div class="main-content" style="margin-top: 70px;">
+        <nav class="navbar navbar-light bg-white border-bottom shadow-sm">
+            <div class="container-fluid">
+                <button class="btn btn-outline-secondary d-md-none me-3" id="mobileToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h4 class="mb-0 text-primary">Feedback Details</h4>
+                <a href="{% url 'feedback_support:feedback_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Back to List
+                </a>
+            </div>
+        </nav>
+
+        <div class="content-body p-3 p-md-4">
+            <!-- Ticket Info Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-ticket-alt me-2"></i>Ticket #{{ feedback.ticket_id }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Category:</strong> {{ feedback.category }}</p>
+                            <p><strong>Status:</strong>
+                                <span class="badge {% if feedback.status == 'Open' %}bg-warning
+                                {% elif feedback.status == 'Closed' %}bg-success
+                                {% else %}bg-info{% endif %}">
+                                    {{ feedback.status }}
+                                </span>
+                            </p>
+                            <p><strong>Submitted:</strong> {{ feedback.created_on|date:"F d, Y H:i" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Policy:</strong> {{ feedback.policy_name.name }}</p>
+                            <p><strong>Network Provider:</strong> {{ feedback.network_provider.name }}</p>
+                            <p><strong>Last Updated:</strong> {{ feedback.updated_on|date:"F d, Y H:i" }}</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <strong>Description:</strong>
+                        <div class="border rounded p-3 mt-2 bg-light">
+                            {{ feedback.description|linebreaks }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Comments Section -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-comments me-2"></i>Admin Comments
+                        <span class="badge bg-light text-dark ms-2">{{ admin_comments.count }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if admin_comments %}
+                        <div class="comments-list">
+                            {% for comment in admin_comments %}
+                            <div class="comment-item mb-3 pb-3 border-bottom">
+                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                    <strong class="text-primary">
+                                        <i class="fas fa-user-shield me-1"></i>
+                                        Admin ({{ comment.user.username }})
+                                    </strong>
+                                    <small class="text-muted">{{ comment.created_at|date:"M d, Y H:i" }}</small>
+                                </div>
+                                <div class="comment-text mt-2 p-2 bg-primary bg-opacity-10 rounded">
+                                    {{ comment.comment|linebreaks }}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-comment-slash fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">No admin comments yet.</p>
+                            <p class="small text-muted">Admin will respond to your feedback soon.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .main-content {
+        margin-left: 250px;
+        transition: all 0.3s ease;
+    }
+
+    @media (max-width: 768px) {
+        .main-content {
+            margin-left: 0;
+        }
+    }
+
+    .comment-item:last-child {
+        border-bottom: none !important;
+        padding-bottom: 0 !important;
+    }
+</style>
+
+<script>
+    // Sidebar toggle functionality
+    document.getElementById('mobileToggle')?.addEventListener('click', function() {
+        const sidebar = document.querySelector('.sidebar');
+        const mainContent = document.querySelector('.main-content');
+
+        if (sidebar.classList.contains('show') || sidebar.style.display !== 'none') {
+            sidebar.classList.remove('show');
+            sidebar.style.display = 'none';
+            mainContent.style.marginLeft = '50px';
+        } else {
+            sidebar.classList.add('show');
+            sidebar.style.display = 'block';
+            mainContent.style.marginLeft = '250px';
+        }
+    });
+</script>
+{% endblock %}

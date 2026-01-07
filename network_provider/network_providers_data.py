@@ -1,0 +1,23 @@
+
+SAMPLE_PROVIDERS = [
+    {'id': 'NTP001', 'name': 'Apollo Hospitals', 'location': 'Banjara Hills, Hyderabad', 'contact': '+91 98765 43210', 'type': 'Multispecialty', 'net_type': 'Cashless', 'limit': '5,00,000', 'status': 'Active'},
+    {'id': 'NTP002', 'name': 'Yashoda Hospitals', 'location': 'Secunderabad, Hyderabad', 'contact': '+91 98765 43211', 'type': 'Multispecialty', 'net_type': 'Reimbursement', 'limit': '4,50,000', 'status': 'Active'},
+    {'id': 'NTP003', 'name': 'Care Hospitals', 'location': 'Nampally, Hyderabad', 'contact': '+91 98765 43212', 'type': 'Cardiac Care', 'net_type': 'Cashless', 'limit': '6,00,000', 'status': 'Active'},
+    {'id': 'NTP004', 'name': 'KIMS Hospitals', 'location': 'Begumpet, Hyderabad', 'contact': '+91 98765 43213', 'type': 'Multispecialty', 'net_type': 'Cashless', 'limit': '5,50,000', 'status': 'Active'},
+    {'id': 'NTP005', 'name': 'Continental Hospitals', 'location': 'Gachibowli, Hyderabad', 'contact': '+91 98765 43214', 'type': 'Super Specialty', 'net_type': 'Cashless', 'limit': '7,00,000', 'status': 'Active'},
+    {'id': 'NTP006', 'name': 'Sunshine Hospitals', 'location': 'Gachibowli, Hyderabad', 'contact': '+91 98765 43215', 'type': 'Orthopedic', 'net_type': 'Reimbursement', 'limit': '3,00,000', 'status': 'Active'},
+    {'id': 'NTP007', 'name': 'MGM Charity Hospital', 'location': 'Warangal City', 'contact': '+91 98765 43216', 'type': 'General Medicine', 'net_type': 'Cashless', 'limit': '2,00,000', 'status': 'Active'},
+    {'id': 'NTP008', 'name': 'Maxivision Eye Hospital', 'location': 'Somajiguda, Hyderabad', 'contact': '+91 98765 43217', 'type': 'Ophthalmology', 'net_type': 'Cashless', 'limit': '1,50,000', 'status': 'Active'},
+    {'id': 'NTP009', 'name': 'Star Hospitals', 'location': 'Banjara Hills, Hyderabad', 'contact': '+91 98765 43218', 'type': 'Multispecialty', 'net_type': 'Cashless', 'limit': '5,00,000', 'status': 'Active'},
+    {'id': 'NTP010', 'name': 'Medicover Hospitals', 'location': 'Hitech City, Hyderabad', 'contact': '+91 98765 43219', 'type': 'Multispecialty', 'net_type': 'Reimbursement', 'limit': '4,00,000', 'status': 'Inactive'},
+    {'id': 'NTP011', 'name': 'Rainbow Childrens Hospital', 'location': 'Banjara Hills, Hyderabad', 'contact': '+91 98765 43220', 'type': 'Pediatrics', 'net_type': 'Cashless', 'limit': '3,50,000', 'status': 'Active'},
+    {'id': 'NTP012', 'name': 'Prathima Hospitals', 'location': 'Kukatpally, Hyderabad', 'contact': '+91 98765 43221', 'type': 'Multispecialty', 'net_type': 'Cashless', 'limit': '4,00,000', 'status': 'Active'},
+    {'id': 'NTP013', 'name': 'Global Hospitals', 'location': 'Lakdikapul, Hyderabad', 'contact': '+91 98765 43222', 'type': 'Multispecialty', 'net_type': 'Cashless', 'limit': '6,50,000', 'status': 'Active'},
+    {'id': 'NTP014', 'name': 'AIG Hospitals', 'location': 'Gachibowli, Hyderabad', 'contact': '+91 98765 43223', 'type': 'Gastroenterology', 'net_type': 'Cashless', 'limit': '8,00,000', 'status': 'Active'},
+    {'id': 'NTP015', 'name': 'Mamata General Hospital', 'location': 'Khammam City', 'contact': '+91 98765 43224', 'type': 'General Medicine', 'net_type': 'Cashless', 'limit': '2,50,000', 'status': 'Active'},
+    {'id': 'NTP016', 'name': 'SVS Medical College Hospital', 'location': 'Mahabubnagar', 'contact': '+91 98765 43225', 'type': 'Multispecialty', 'net_type': 'Reimbursement', 'limit': '3,00,000', 'status': 'Active'},
+    {'id': 'NTP017', 'name': 'Prasad Hospital', 'location': 'Nizamabad City', 'contact': '+91 98765 43226', 'type': 'General Medicine', 'net_type': 'Cashless', 'limit': '2,00,000', 'status': 'Active'},
+    {'id': 'NTP018', 'name': 'Omega Hospitals', 'location': 'Banjara Hills, Hyderabad', 'contact': '+91 98765 43227', 'type': 'Oncology', 'net_type': 'Cashless', 'limit': '7,50,000', 'status': 'Active'},
+    {'id': 'NTP019', 'name': 'Rishi Hospital', 'location': 'Karimnagar City', 'contact': '+91 98765 43228', 'type': 'Multispecialty', 'net_type': 'Cashless', 'limit': '3,00,000', 'status': 'Active'},
+    {'id': 'NTP020', 'name': 'Century Hospital', 'location': 'Banjara Hills, Hyderabad', 'contact': '+91 98765 43229', 'type': 'Multispecialty', 'net_type': 'Reimbursement', 'limit': '4,50,000', 'status': 'Active'},
+]

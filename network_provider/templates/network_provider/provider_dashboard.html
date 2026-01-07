@@ -1,0 +1,485 @@
+{% extends 'users/base.html' %}
+{% block content %}
+    {% include 'users/includes/sidebar.html' %}
+
+<div class="main-content" id="main-content" style="margin-top:70px;">
+    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
+        <div class="container-fluid px-4 py-2">
+            <button class="btn btn-outline-secondary d-md-none me-3" id="mobileToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h4 class="mb-0 text-primary">Network Provider Management</h4>
+        </div>
+    </nav>
+
+    <!-- Content area -->
+    <div class="content-body p-1 p-md-4">
+        <div class="container-fluid">
+            <div class="mb-4">
+                <h3 class="text-primary fw-bold mb-3">Network Provider Management</h3>
+                <p class="text-muted mb-0">Manage and explore our network of registered hospitals and healthcare providers</p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-xxl-3 col-xl-4 col-lg-6 col-md-6 col-sm-12">
+                    <div class="card shadow border-0 hover-card" onclick="window.location.href='{% url 'network_provider:network_providers_list' %}'" style="cursor:pointer;">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="icon-circle bg-primary-gradient text-white me-3">
+                                    <i class="fas fa-hospital-alt fa-lg"></i>
+                                </div>
+                                <div>
+                                    <h5 class="fw-bold mb-1">All Network Providers</h5>
+                                    <p class="text-muted small mb-0">Registered hospitals and clinics</p>
+                                </div>
+                            </div>
+                            <p class="text-muted mb-4">View and manage our registered hospitals and clinics across Telangana. Browse provider details, check coverage limits, and verify eligibility.</p>
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-light text-primary">
+                                    <i class="fas fa-arrow-right me-1"></i> Explore
+                                </span>
+                                <a href="{% url 'network_provider:network_providers_list' %}" class="btn btn-primary btn-sm rounded-pill px-3 py-1">
+                                    View List <i class="fas fa-chevron-right ms-1 fa-xs"></i>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0 pt-0">
+                            <div class="d-flex justify-content-between text-muted small">
+                                <span><i class="fas fa-map-marker-alt me-1"></i> Telangana</span>
+                                <span><i class="fas fa-shield-alt me-1"></i> Coverage</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- You can add more cards here in the future -->
+                {% comment %}
+                <div class="col-xxl-3 col-xl-4 col-lg-6 col-md-6 col-sm-12">
+                    <div class="card shadow border-0 hover-card" style="cursor:pointer; opacity: 0.7;">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="icon-circle bg-secondary-gradient text-white me-3">
+                                    <i class="fas fa-chart-line fa-lg"></i>
+                                </div>
+                                <div>
+                                    <h5 class="fw-bold mb-1">Analytics Dashboard</h5>
+                                    <p class="text-muted small mb-0">Provider insights & metrics</p>
+                                </div>
+                            </div>
+                            <p class="text-muted mb-4">Coming soon: Detailed analytics and insights about network providers, coverage statistics, and performance metrics.</p>
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-light text-secondary">
+                                    <i class="fas fa-clock me-1"></i> Coming Soon
+                                </span>
+                                <button class="btn btn-secondary btn-sm rounded-pill px-3 py-1" disabled>
+                                    View <i class="fas fa-chevron-right ms-1 fa-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endcomment %}
+            </div>
+
+            <!-- Additional Information Section -->
+            <div class="row mt-5">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body p-4">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <h5 class="fw-bold text-primary mb-2">Need Assistance?</h5>
+                                    <p class="text-muted mb-0">Our support team is available to help you with network provider inquiries, eligibility checks, and coverage questions.</p>
+                                </div>
+                                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                                    <button class="btn btn-outline-primary rounded-pill px-4">
+                                        <i class="fas fa-headset me-2"></i> Contact Support
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Reset and base styles */
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        overflow-x: hidden;
+        padding-top: 0 !important;
+    }
+
+    /* Main wrapper */
+    #wrapper {
+        display: flex;
+        min-height: 100%;
+        background: #f4f7f6;
+        margin-top: 70px;
+    }
+
+    /* Main content area */
+    .main-content {
+        flex: 1;
+        margin-left: 250px;
+        transition: all 0.3s ease;
+        background: #f4f7f6;
+        display: flex;
+        flex-direction: column;
+        width: calc(100% - 250px);
+        min-height: 100vh;
+        position: relative;
+        padding-top: 0;
+    }
+
+    /* Ensure navbar is visible */
+    .navbar {
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+        border-bottom: 1px solid #dee2e6 !important;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
+
+    /* Content area spacing */
+    .content-body {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        margin-top: 60px;
+    }
+
+    /* When sidebar is closed */
+    .sidebar-closed ~ .main-content,
+    .sidebar.collapsed ~ .main-content {
+        margin-left: 50px !important;
+        width: 100% !important;
+    }
+
+    /* Card Styling */
+    .hover-card {
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        border-radius: 12px;
+        overflow: hidden;
+        height: 100%;
+        background: white;
+    }
+
+    .hover-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 15px 35px rgba(50, 50, 93, 0.1), 0 5px 15px rgba(0, 0, 0, 0.07) !important;
+        border-color: #4dabf7;
+    }
+
+    .icon-circle {
+        width: 56px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        flex-shrink: 0;
+    }
+
+    .bg-primary-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .bg-secondary-gradient {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .card-footer {
+        background: linear-gradient(to right, transparent, rgba(77, 171, 247, 0.05), transparent);
+    }
+
+    /* Button styling */
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    .btn-outline-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Badge styling */
+    .badge {
+        font-weight: 500;
+        padding: 6px 12px;
+        border-radius: 20px;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1200px) {
+        .main-content {
+            margin-left: 250px;
+            width: calc(100% - 250px);
+        }
+
+        .icon-circle {
+            width: 50px;
+            height: 50px;
+        }
+
+        .icon-circle i {
+            font-size: 1.2rem !important;
+        }
+    }
+
+    @media (max-width: 992px) {
+        .main-content {
+            margin-left: 50px !important;
+            width: 100% !important;
+        }
+
+        .content-body {
+            margin-top: 70px;
+            padding: 15px;
+        }
+
+        .card-body {
+            padding: 20px !important;
+        }
+
+        .icon-circle {
+            width: 48px;
+            height: 48px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .content-body {
+            margin-top: 70px;
+            padding: 10px;
+        }
+
+        h3 {
+            font-size: 1.5rem;
+        }
+
+        .card-body {
+            padding: 16px !important;
+        }
+
+        .icon-circle {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px !important;
+            font-size: 0.85rem;
+        }
+
+        .row.g-4 {
+            gap: 1rem !important;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .main-content {
+            margin-left: 0 !important;
+            width: 100% !important;
+        }
+
+        .content-body {
+            margin-top: 70px;
+            padding: 8px;
+        }
+
+        h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem !important;
+        }
+
+        .card {
+            margin-bottom: 1rem;
+        }
+
+        .card-body {
+            padding: 1.25rem !important;
+        }
+
+        .icon-circle {
+            width: 40px;
+            height: 40px;
+            margin-right: 12px !important;
+        }
+
+        .icon-circle i {
+            font-size: 1rem !important;
+        }
+
+        h5 {
+            font-size: 1.1rem;
+        }
+
+        p {
+            font-size: 0.9rem;
+        }
+
+        .btn {
+            padding: 6px 16px !important;
+            font-size: 0.85rem;
+        }
+
+        .btn-sm {
+            padding: 4px 12px !important;
+            font-size: 0.8rem;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 4px 10px;
+        }
+
+        /* Make card clickable area more obvious on mobile */
+        .hover-card {
+            border: 2px solid transparent;
+        }
+
+        .hover-card:active {
+            border-color: #4dabf7;
+            transform: scale(0.98);
+        }
+    }
+
+    @media (max-width: 375px) {
+        .content-body {
+            padding: 6px;
+        }
+
+        .card-body {
+            padding: 1rem !important;
+        }
+
+        .d-flex.align-items-center.mb-3 {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .icon-circle {
+            margin-right: 0 !important;
+            margin-bottom: 12px;
+        }
+
+        .d-flex.justify-content-between.align-items-center {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn-sm {
+            width: 100%;
+        }
+    }
+
+    /* Animation for loading */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hover-card {
+        animation: fadeIn 0.5s ease-out;
+    }
+
+    /* Scrollbar styling for content if needed */
+    .content-body::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .content-body::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .content-body::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+
+    .content-body::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+</style>
+
+<script>
+// Event listener for DOM content loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle sidebar toggle
+    const mobileToggle = document.getElementById('mobileToggle');
+    if (mobileToggle) {
+        mobileToggle.addEventListener('click', function() {
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+
+            if (sidebar && mainContent) {
+                if (sidebar.classList.contains('show') || sidebar.style.display !== 'none') {
+                    // Sidebar is open, close it
+                    sidebar.classList.remove('show');
+                    sidebar.style.display = 'none';
+                    mainContent.style.marginLeft = '50px';
+                    mainContent.style.width = 'calc(100% - 50px)';
+                } else {
+                    // Sidebar is closed, open it
+                    sidebar.classList.add('show');
+                    sidebar.style.display = 'block';
+                    mainContent.style.marginLeft = '250px';
+                    mainContent.style.width = 'calc(100% - 250px)';
+                }
+            }
+        });
+    }
+
+    // Add click animation to cards
+    const cards = document.querySelectorAll('.hover-card');
+    cards.forEach(card => {
+        card.addEventListener('click', function() {
+            // Add click animation
+            this.style.transform = 'scale(0.98)';
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 150);
+        });
+    });
+
+    // Adjust content margin based on navbar height
+    const navbar = document.querySelector('.navbar');
+    const contentBody = document.querySelector('.content-body');
+
+    if (navbar && contentBody) {
+        const navbarHeight = navbar.offsetHeight;
+        contentBody.style.marginTop = (navbarHeight + 10) + 'px';
+    }
+
+    // Handle window resize
+    window.addEventListener('resize', function() {
+        if (navbar && contentBody) {
+            const navbarHeight = navbar.offsetHeight;
+            contentBody.style.marginTop = (navbarHeight + 10) + 'px';
+        }
+    });
+});
+</script>
+
+<!-- Add Bootstrap JS if not already included in base.html -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

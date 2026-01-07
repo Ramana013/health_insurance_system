@@ -1,0 +1,666 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block content %}
+<div id="wrapper">
+    {% include 'users/includes/sidebar.html' %}
+
+    <div class="main-content" id="main-content">
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
+            <div class="container-fluid px-4 py-2">
+                <button class="btn btn-outline-secondary d-md-none me-3" id="mobileToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h4 class="mb-0 text-primary">Claim Management</h4>
+            </div>
+        </nav>
+
+        <div class="content-body p-1 p-md-4">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm mb-3" role="alert">
+                        <i class="fas
+                            {% if message.tags == 'success' %}fa-check-circle
+                            {% elif message.tags == 'error' %}fa-exclamation-circle
+                            {% else %}fa-info-circle{% endif %} me-2">
+                        </i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="mb-4">
+                <ul class="nav nav-pills" id="claimTabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active me-2" id="policies-tab" data-bs-toggle="pill" data-bs-target="#policies-content">
+                            <i class="fas fa-list-ul me-1"></i> My Policies
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" id="submitted-tab" data-bs-toggle="pill" data-bs-target="#submitted-content">
+                            <i class="fas fa-history me-1"></i> Claim History
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="policies-content">
+                    <div class="card shadow border-0">
+                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="fas fa-user-shield me-2"></i>My Active Policies</h5>
+                        </div>
+
+                        <div class="table-responsive table-scroll-container p-2" style="overflow-x: auto; min-height: 400px;">
+                            <table class="table table-striped align-middle mb-0" style="min-width: 800px;">
+                                <thead class="table-dark" style="position: sticky; top: 0; z-index: 5;">
+                                    <tr>
+                                        <th>Policy ID</th>
+                                        <th>Policy Name</th>
+                                        <th class="d-none d-lg-table-cell">Description</th>
+                                        <th>Premium</th>
+                                        <th class="d-none d-md-table-cell">Coverage</th>
+                                        <th class="d-none d-md-table-cell">Validity</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for up in user_policies %}
+                                    <tr>
+                                        <td class="fw-bold">{{ up.policy.policy_id }}</td>
+                                        <td><strong>{{ up.policy.name }}</strong></td>
+                                        <td class="d-none d-lg-table-cell text-muted">{{ up.policy.description|truncatechars:40 }}</td>
+                                        <td><span class="badge bg-info text-dark">₹ {{ up.policy.premium }}</span></td>
+                                        <td class="d-none d-md-table-cell">{{ up.policy.coverage_limit }}</td>
+                                        <td class="d-none d-md-table-cell">
+                                            <span class="text-primary fw-bold">{{ up.policy.validity_period|default:up.policy.validity }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <button class="btn btn-warning btn-sm me-1"
+                                                    onclick="showClaimForm('{{ up.policy.name }}', '{{ up.id }}')"
+                                                    title="Submit a claim for this policy">
+                                                <i class="fas fa-file-medical me-1"></i> Claim
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="7" class="text-center py-5">
+                                            <div class="alert alert-info d-inline-block">
+                                                <i class="fas fa-info-circle me-2"></i> No active policies found.
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="submitted-content">
+                    <div class="card shadow border-0">
+                        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="fas fa-history me-2"></i>Claim History</h5>
+                        </div>
+
+                        <div class="table-responsive table-scroll-container p-2" style="overflow-x: auto; min-height: 400px;">
+                            <table class="table table-striped align-middle mb-0" style="min-width: 800px;">
+                                <thead class="table-dark" style="position: sticky; top: 0; z-index: 5;">
+                                    <tr>
+                                        <th>Claim ID</th>
+                                        <th>Policy</th>
+                                        <th class="d-none d-md-table-cell">Filed Date</th>
+                                        <th class="d-none d-lg-table-cell">Amount</th>
+                                        <th>Status</th>
+                                        <th class="d-none d-lg-table-cell">Comment</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for claim in submitted_claims %}
+                                    <tr>
+                                        <td class="fw-bold">#{{ claim.claim_id }}</td>
+                                        <td><strong>{{ claim.user_policy.policy.name }}</strong></td>
+
+                                        <td class="d-none d-md-table-cell">{{ claim.filed_date|date:"d M Y H:i" }}</td>
+                                        <td class="d-none d-lg-table-cell">
+                                            <span class="badge bg-info text-dark">₹ {{ claim.claim_amount }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge rounded-pill
+                                                {% if claim.status == 'APPROVED' %}bg-success
+                                                {% elif claim.status == 'REJECTED' %}bg-danger
+                                                {% elif claim.status == 'UNDER_REVIEW' %}bg-warning text-dark
+                                                {% elif claim.status == 'SUBMITTED' %}bg-primary
+                                                {% else %}bg-info text-dark{% endif %}">
+                                                {{ claim.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td class="d-none d-lg-table-cell text-muted small">
+                                            {{ claim.comment|default:"No comments yet"|truncatechars:30 }}
+                                        </td>
+                                        <td class="text-center">
+                                            <button class="btn btn-outline-info btn-sm me-1"
+                                                    onclick="viewClaimDetails('{{ claim.id }}')"
+                                                    title="View claim details">
+                                                <i class="fas fa-eye me-1"></i> View
+                                            </button>
+                                            {% if claim.document %}
+                                                <a href="{{ claim.document.url }}"
+                                                   class="btn btn-outline-secondary btn-sm"
+                                                   target="_blank"
+                                                   title="Download document">
+                                                    <i class="fas fa-download me-1"></i> Doc
+                                                </a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="7" class="text-center py-5">
+                                            <div class="alert alert-info d-inline-block">
+                                                <i class="fas fa-info-circle me-2"></i> No claims submitted yet.
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="claimFormSection" class="card shadow border-0 mt-4" style="display:none;">
+                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-file-medical me-2"></i>New Claim:
+                        <span id="displayPolicyName" class="fw-bold"></span>
+                    </h5>
+                    <button type="button" class="btn-close" onclick="hideClaimForm()" aria-label="Close"></button>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{% url 'claims:submit_claim' %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <input type="hidden" name="user_policy_id" id="userPolicyId">
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Reason for Claim *</label>
+                                <textarea name="reason" class="form-control" rows="4" required
+                                          placeholder="Describe the medical reason..."></textarea>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Claim Amount (₹) *</label>
+                                <input type="number" name="claim_amount" class="form-control" required
+                                       placeholder="Enter claim amount" min="0">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Upload Supporting Documents *</label>
+                            <input type="file" name="document" class="form-control" required
+                                   accept=".pdf,.jpg,.jpeg,.png">
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-3">
+                            <button type="button" class="btn btn-outline-secondary px-4" onclick="hideClaimForm()">
+                                <i class="fas fa-times me-1"></i> Cancel
+                            </button>
+                            <button type="submit" class="btn btn-success px-4 fw-bold">
+                                <i class="fas fa-paper-plane me-1"></i> Submit Claim
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="claimDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-file-invoice me-2"></i>Claim Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="claimDetailsContent" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3 text-muted">Loading claim details...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Reset and base styles */
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        overflow-x: hidden;
+        padding-top: 0 !important;
+    }
+
+    /* Main wrapper */
+    #wrapper {
+        display: flex;
+        min-height: 100%;
+        background: #f4f7f6;
+        margin-top: 70px;
+    }
+
+    /* Main content area */
+    .main-content {
+        flex: 1;
+        margin-left: 250px;
+        transition: all 0.3s ease;
+        background: #f4f7f6;
+        display: flex;
+        flex-direction: column;
+        width: calc(100% - 250px);
+        min-height: 100vh;
+        position: relative;
+        padding-top: 0;
+    }
+
+    /* Ensure navbar is visible */
+    .navbar {
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+        border-bottom: 1px solid #dee2e6 !important;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
+
+    /* Content area spacing */
+    .content-body {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        margin-top: 60px;
+    }
+
+    /* Tab styling */
+    .nav-pills .nav-link {
+        color: #495057;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .nav-pills .nav-link.active {
+        background-color: #0d6efd;
+        color: white;
+        box-shadow: 0 4px 10px rgba(13, 110, 253, 0.2);
+    }
+
+    /* Table container */
+    .table-scroll-container {
+        background: white;
+        border-radius: 0 0 8px 8px;
+        overflow: auto;
+    }
+
+    /* Table responsive styling */
+    table {
+        width: 100% !important;
+        min-width: 800px;
+        border-collapse: collapse;
+    }
+
+    /* Table cell padding for mobile */
+    th, td {
+        padding: 12px 8px !important;
+        vertical-align: middle !important;
+        white-space: nowrap;
+    }
+
+    /* Modal styling */
+    .modal-content {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .modal-header {
+        padding: 1rem 1.5rem;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #dee2e6;
+    }
+
+    /* Button hover effects */
+    .btn-outline-info:hover {
+        background-color: #0dcaf0;
+        color: white;
+    }
+
+    .btn-warning:hover {
+        background-color: #ffc107;
+        color: black;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(255, 193, 7, 0.2);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 992px) {
+        .main-content {
+            margin-left: 50px !important;
+            width: 100% !important;
+        }
+
+        .content-body {
+            margin-top: 70px;
+            padding: 10px;
+        }
+
+        table {
+            min-width: 700px;
+        }
+
+        th, td {
+            padding: 10px 6px !important;
+            font-size: 14px;
+        }
+
+        .btn-sm {
+            padding: 5px 10px !important;
+            font-size: 12px;
+        }
+
+        .card-header {
+            flex-direction: column;
+            gap: 10px;
+            text-align: center;
+        }
+
+        .nav-pills {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .nav-item {
+            flex: 0 0 auto;
+        }
+    }
+
+    @media (max-width: 768px) {
+        /* Hide description, coverage, and validity columns on mobile */
+        th.d-none.d-lg-table-cell,
+        td.d-none.d-lg-table-cell,
+        th.d-none.d-md-table-cell,
+        td.d-none.d-md-table-cell {
+            display: none;
+        }
+
+        table {
+            min-width: 600px;
+        }
+
+        .content-body {
+            margin-top: 70px;
+            padding: 8px;
+        }
+
+        .card-header h5 {
+            font-size: 1.1rem;
+        }
+
+        .modal-dialog {
+            margin: 0.5rem;
+        }
+
+        /* Adjust form layout */
+        #claimFormSection .row .col-md-6 {
+            width: 100%;
+        }
+    }
+
+    @media (max-width: 576px) {
+        th:nth-child(1), td:nth-child(1) {
+            max-width: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        table {
+            min-width: 500px;
+        }
+
+        .btn {
+            padding: 4px 8px !important;
+            font-size: 11px;
+            margin-bottom: 2px;
+        }
+
+        .content-body {
+            padding: 5px;
+        }
+
+        td.text-center .btn {
+            display: inline-block;
+            width: auto;
+            margin: 2px;
+        }
+
+        .modal-body {
+            padding: 1rem;
+        }
+
+        .modal-footer .btn {
+            flex: 1;
+            margin: 0 2px;
+        }
+
+        /* Adjust claim form buttons */
+        #claimFormSection .d-flex {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        #claimFormSection .btn {
+            width: 100%;
+        }
+
+        /* Fix for empty state on mobile */
+        .alert.d-inline-block {
+            display: block !important;
+            width: 100%;
+            text-align: center;
+        }
+    }
+
+    /* Scrollbar styling */
+    .table-scroll-container::-webkit-scrollbar {
+        height: 8px;
+        width: 8px;
+    }
+
+    .table-scroll-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .table-scroll-container::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+
+    .table-scroll-container::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    /* When sidebar is closed */
+    .sidebar-closed ~ .main-content,
+    .sidebar.collapsed ~ .main-content {
+        margin-left: 50px !important;
+        width: 100% !important;
+    }
+</style>
+
+<script>
+    function showClaimForm(policyName, upId) {
+        const formSection = document.getElementById('claimFormSection');
+        document.getElementById('displayPolicyName').innerText = policyName;
+        document.getElementById('userPolicyId').value = upId;
+        formSection.style.display = 'block';
+        setTimeout(() => { formSection.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100);
+    }
+
+    function hideClaimForm() {
+        document.getElementById('claimFormSection').style.display = 'none';
+    }
+
+    // Dynamic View Fetching - Integrated with Policy App Model
+    function viewClaimDetails(claimId) {
+        const modalElement = document.getElementById('claimDetailsModal');
+        const contentDiv = document.getElementById('claimDetailsContent');
+
+        contentDiv.innerHTML = `
+            <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+            <p class="mt-3 text-muted">Loading claim details...</p>
+        `;
+
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+
+        fetch(`/claims/details/${claimId}/`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Format status for display
+                const statusText = data.status_raw === 'SUBMITTED' ? 'Submitted' :
+                                 data.status_raw === 'UNDER_REVIEW' ? 'Under Review' :
+                                 data.status_raw === 'APPROVED' ? 'Approved' :
+                                 data.status_raw === 'REJECTED' ? 'Rejected' : data.status;
+
+                contentDiv.innerHTML = `
+                    <div class="text-start">
+                        <h6 class="text-muted mb-3 border-bottom pb-2">Claim Details for ID: #${data.claim_id}</h6>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <strong>Status:</strong>
+                                <p><span class="badge ${getStatusClass(data.status_raw)} p-2">${statusText}</span></p>
+                            </div>
+                            <div class="col-6">
+                                <strong>Amount:</strong>
+                                <p class="text-primary fw-bold">₹ ${data.amount}</p>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Reason for Claim:</strong>
+                            <p class="p-2 bg-light rounded">${data.reason || 'No reason provided'}</p>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Admin Comment:</strong>
+                            <div class="p-2 border rounded ${data.status_raw === 'REJECTED' ? 'bg-danger-subtle border-danger' : data.status_raw === 'APPROVED' ? 'bg-success-subtle border-success' : 'bg-light'}">
+                                ${data.comment || 'No comments provided by admin yet.'}
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6"><strong>Submitted:</strong><p>${data.filed_date}</p></div>
+                            <div class="col-6">
+                                <strong>Document:</strong><br>
+                                ${data.document_url ? `<a href="${data.document_url}" target="_blank" class="btn btn-sm btn-outline-primary mt-1"><i class="fas fa-external-link-alt me-1"></i>Open File</a>` : '<span class="text-muted">No file attached</span>'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            })
+            .catch(error => {
+                console.error('Error loading claim details:', error);
+                contentDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Error: Could not load claim details. Please try again.
+                        <div class="mt-2 small text-muted">${error.message}</div>
+                    </div>`;
+            });
+    }
+
+    function getStatusClass(status) {
+        const s = status ? status.toUpperCase() : '';
+        if (s === 'APPROVED') return 'bg-success';
+        if (s === 'REJECTED') return 'bg-danger';
+        if (s === 'UNDER_REVIEW') return 'bg-warning text-dark';
+        if (s === 'SUBMITTED') return 'bg-primary';
+        return 'bg-info text-dark';
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle Sidebar
+        const mobileToggle = document.getElementById('mobileToggle');
+        if (mobileToggle) {
+            mobileToggle.addEventListener('click', function() {
+                const sidebar = document.querySelector('.sidebar');
+                const mainContent = document.querySelector('.main-content');
+                if (sidebar.classList.contains('show') || sidebar.style.display !== 'none') {
+                    sidebar.classList.remove('show');
+                    sidebar.style.display = 'none';
+                    mainContent.style.marginLeft = '50px';
+                    mainContent.style.width = 'calc(100% - 50px)';
+                } else {
+                    sidebar.classList.add('show');
+                    sidebar.style.display = 'block';
+                    mainContent.style.marginLeft = '250px';
+                    mainContent.style.width = 'calc(100% - 250px)';
+                }
+            });
+        }
+
+        // Adjust content margin based on navbar height
+        const navbar = document.querySelector('.navbar');
+        const contentBody = document.querySelector('.content-body');
+
+        if (navbar && contentBody) {
+            const navbarHeight = navbar.offsetHeight;
+            contentBody.style.marginTop = (navbarHeight + 10) + 'px';
+        }
+
+        // Adjust table container height
+        function adjustTableHeight() {
+            document.querySelectorAll('.table-scroll-container').forEach(container => {
+                const windowHeight = window.innerHeight;
+                const navbarHeight = document.querySelector('.navbar')?.offsetHeight || 60;
+                const cardHeaderHeight = container.closest('.card')?.querySelector('.card-header')?.offsetHeight || 60;
+                const calculatedHeight = windowHeight - navbarHeight - cardHeaderHeight - 120;
+                container.style.maxHeight = Math.max(400, calculatedHeight) + 'px';
+            });
+        }
+
+        setTimeout(adjustTableHeight, 100);
+        window.addEventListener('resize', adjustTableHeight);
+
+        if (mobileToggle) {
+            mobileToggle.addEventListener('click', function() {
+                setTimeout(adjustTableHeight, 300);
+            });
+        }
+    });
+</script>
+{% endblock %}

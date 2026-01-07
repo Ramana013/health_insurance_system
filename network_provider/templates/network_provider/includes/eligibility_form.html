@@ -1,0 +1,77 @@
+<form id="eligibilityForm" novalidate>
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+    <input type="hidden" name="provider_id" value="{{ provider_id }}">
+
+    <div class="mb-4">
+        <div class="alert alert-light border">
+            <h6 class="alert-heading mb-2"><i class="fas fa-hospital me-1"></i>{{ provider_name }}</h6>
+            <p class="mb-0 small text-muted">Please provide your policy details to check eligibility</p>
+        </div>
+    </div>
+
+    <!-- Policy Name Field -->
+    <div class="mb-3">
+        <label for="policy_name" class="form-label fw-bold">
+            <i class="fas fa-file-contract me-1"></i>Policy Name *
+        </label>
+        {{ form.policy_name }}
+        <div class="form-text">Select your insurance policy</div>
+        <div class="invalid-feedback">Please select a policy</div>
+    </div>
+
+    <!-- Coverage Type Field -->
+    <div class="mb-3">
+        <label for="coverage_type" class="form-label fw-bold">
+            <i class="fas fa-shield-alt me-1"></i>Coverage Type *
+        </label>
+        {{ form.coverage_type }}
+        <div class="form-text">Type of coverage you want to use</div>
+        <div class="invalid-feedback">Please select a coverage type</div>
+    </div>
+
+    <!-- Coverage Limit Field -->
+    <div class="mb-3">
+        <label for="coverage_limit" class="form-label fw-bold">
+            <i class="fas fa-rupee-sign me-1"></i>Coverage Limit *
+        </label>
+        <div class="input-group">
+            <span class="input-group-text">₹</span>
+            {{ form.coverage_limit }}
+            <span class="input-group-text">.00</span>
+        </div>
+        <div class="form-text">Enter the coverage amount you want to claim (₹1,000 - ₹1,00,00,000)</div>
+        <div class="invalid-feedback">Please enter a valid coverage amount between ₹1,000 and ₹1,00,00,000</div>
+    </div>
+
+    <!-- Validity Period Field -->
+    <div class="mb-4">
+        <label for="validity_years" class="form-label fw-bold">
+            <i class="fas fa-calendar-alt me-1"></i>Validity Period *
+        </label>
+        {{ form.validity_years }}
+        <div class="form-text">Select how many years the policy is valid for</div>
+        <div class="invalid-feedback">Please select a validity period</div>
+    </div>
+
+    <!-- Additional Information -->
+    <div class="alert alert-info small">
+        <i class="fas fa-info-circle me-2"></i>
+        <strong>Note:</strong> All fields are required. Eligibility will be checked based on:
+        <ul class="mb-0 mt-1">
+            <li>Policy network compatibility</li>
+            <li>Coverage limit vs hospital limit</li>
+            <li>Coverage limit vs policy limit</li>
+            <li>Provider active status</li>
+        </ul>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="d-flex justify-content-between mt-4 pt-3 border-top">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+            <i class="fas fa-times me-1"></i>Cancel
+        </button>
+        <button type="submit" class="btn btn-warning px-4" id="submitEligibilityBtn">
+            <i class="fas fa-clipboard-check me-1"></i>Check Eligibility
+        </button>
+    </div>
+</form>

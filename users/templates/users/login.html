@@ -1,0 +1,25 @@
+{% extends 'users/base.html' %}
+
+{% block content %}
+<div class="login-container">
+	<h2>Login</h2>
+	<form method="POST">
+		{% csrf_token %}
+		<label for="id_username">Username:</label>
+		{{ form.username }}
+		
+		<label for="id_password">Password:</label>
+		{{ form.password }}
+
+		<button type="submit">Login</button>
+	</form>
+	<p>
+		
+		<a href="{% url 'users:forgot_password' %}" class="btn-link">Forgot Password</a>
+	</p>
+	<p>
+		Don't have an account? <a href="{% url 'users:register' %}" style="color: blue; text-decoration: underline;">Register</a>
+	</p>
+</div>
+
+{% endblock %}

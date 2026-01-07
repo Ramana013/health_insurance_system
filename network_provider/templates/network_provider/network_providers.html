@@ -1,0 +1,937 @@
+{% extends 'users/base.html' %}
+{% block content %}
+    {% include 'users/includes/sidebar.html' %}
+
+<div class="main-content" id="main-content" style = "margin-top:70px;">
+    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
+        <div class="container-fluid px-4 py-2">
+            <button class="btn btn-outline-secondary d-md-none me-3" id="mobileToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h4 class="mb-0 text-primary">Network Providers</h4>
+        </div>
+    </nav>
+
+    <!-- Content area -->
+    <div class="content-body p-1 p-md-4">
+        <div class="card shadow border-0">
+            <div class="card-header bg-primary text-white py-3">
+                <h5 class="mb-0"><i class="fas fa-list-alt me-2"></i>Display all available Network Providers</h5>
+            </div>
+            <div class="card-body">
+                <!-- Search and Filter Section -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <form method="GET" class="d-flex">
+                            <input type="text" name="search" class="form-control me-2" placeholder="Search hospitals..." value="{{ request.GET.search|default:'' }}">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </form>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="d-flex justify-content-end">
+                            <div class="btn-group" role="group">
+                                <a href="?status=Active" class="btn {% if request.GET.status == 'Active' %}btn-success{% else %}btn-outline-success{% endif %}">
+                                    Active ({{ active_providers }})
+                                </a>
+                                <a href="?status=Inactive" class="btn {% if request.GET.status == 'Inactive' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
+                                    Inactive
+                                </a>
+                                <a href="?" class="btn btn-outline-primary">All</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive table-scroll-container p-2" style="overflow-x: auto; min-height: 400px;">
+                    <table class="table table-striped align-middle mb-0" style="min-width: 800px;">
+                        <thead class="table-dark" style="position: sticky; top: 0; z-index: 5;">
+                            <tr>
+                                <th>Provider ID</th>
+                                <th>Hospital Name</th>
+                                <th>Location</th>
+                                <th>Contact</th>
+                                <th>Type</th>
+                                <th>Network Type</th>
+                                <th>Coverage Limit</th>
+                                <th>Status</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for provider in providers %}
+                            <tr>
+                                <td class="fw-bold">{{ provider.provider_id }}</td>
+                                <td><strong>{{ provider.hospital_name }}</strong></td>
+                                <td class="small">{{ provider.location }}</td>
+                                <td>{{ provider.contact }}</td>
+                                <td>
+                                    <span class="badge bg-info text-dark">{{ provider.type }}</span>
+                                </td>
+                                <td>
+                                    {% if provider.network_type == 'Cashless' %}
+                                    <span class="badge bg-success">Cashless</span>
+                                    {% elif provider.network_type == 'Reimbursement' %}
+                                    <span class="badge bg-warning">Reimbursement</span>
+                                    {% else %}
+                                    <span class="badge bg-primary">{{ provider.network_type }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-info text-dark">₹ {{ provider.coverage_limit }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge rounded-pill {% if provider.status == 'Active' %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {{ provider.status }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group gap-1" role="group">
+                                        <!-- View Details Button - Opens Modal -->
+                                        <button class="btn btn-outline-info btn-sm me-1"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#providerModal{{ provider.provider_id }}"
+                                                aria-label="View provider details">
+                                            <i class="fas fa-eye me-1"></i> View
+                                        </button>
+                                        <!-- Check Eligibility Button -->
+                                        <button class="btn btn-warning btn-sm" onclick="showEligibilityModal('{{ provider.provider_id }}', '{{ provider.hospital_name|escapejs }}')">
+                                            <i class="fas fa-clipboard-check me-1"></i>Check
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="9" class="text-center py-5">
+                                    <div class="alert alert-info d-inline-block">
+                                        <i class="fas fa-hospital-alt me-2"></i>
+                                        <h5>No network providers found</h5>
+                                        <p class="mb-0">{% if request.GET.search %}Try a different search term{% else %}No providers available{% endif %}</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if is_paginated %}
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                Previous
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                                Next
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+                <!-- Summary -->
+                <div class="mt-4 text-muted small">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Showing {{ providers.count }} of {{ total_providers }} network providers
+                    {% if request.GET.status %}
+                    (Filtered by status: {{ request.GET.status }})
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Provider Details Modals -->
+{% for provider in providers %}
+<div class="modal fade" id="providerModal{{ provider.provider_id }}" tabindex="-1" aria-labelledby="providerModalLabel{{ provider.provider_id }}" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="providerModalLabel{{ provider.provider_id }}">
+                    <i class="fas fa-hospital me-2"></i>{{ provider.hospital_name }} - Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small mb-1">Provider ID</label>
+                            <p class="fw-bold text-primary">{{ provider.provider_id }}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small mb-1">Hospital Name</label>
+                            <p class="fw-bold">{{ provider.hospital_name }}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small mb-1">Location</label>
+                            <p class="text-muted"><i class="fas fa-map-marker-alt me-1"></i> {{ provider.location }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small mb-1">Contact</label>
+                            <p class="fw-bold"><i class="fas fa-phone me-1"></i> {{ provider.contact }}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small mb-1">Type</label>
+                            <p><span class="badge bg-info text-dark">{{ provider.type }}</span></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small mb-1">Status</label>
+                            <p>
+                                <span class="badge rounded-pill {% if provider.status == 'Active' %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {{ provider.status }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small mb-1">Network Type</label>
+                            <p>
+                                {% if provider.network_type == 'Cashless' %}
+                                <span class="badge bg-success"><i class="fas fa-credit-card me-1"></i> Cashless</span>
+                                {% elif provider.network_type == 'Reimbursement' %}
+                                <span class="badge bg-warning"><i class="fas fa-money-bill-wave me-1"></i> Reimbursement</span>
+                                {% else %}
+                                <span class="badge bg-primary">{{ provider.network_type }}</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small mb-1">Coverage Limit</label>
+                            <p class="fw-bold text-success"><i class="fas fa-rupee-sign me-1"></i> {{ provider.coverage_limit }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-light border">
+                    <h6 class="alert-heading mb-2"><i class="fas fa-info-circle me-1"></i>Provider Information</h6>
+                    <p class="mb-0 small text-muted">
+                        This provider is available for {% if provider.network_type == 'Cashless' %}cashless{% elif provider.network_type == 'Reimbursement' %}reimbursement{% else %}{{ provider.network_type|lower }}{% endif %} treatments.
+                        {% if provider.status == 'Active' %}
+                        <span class="text-success">Currently active and accepting patients.</span>
+                        {% else %}
+                        <span class="text-secondary">Currently inactive. Please check back later.</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Close
+                </button>
+                <button class="btn btn-warning" onclick="closeProviderModalAndShowEligibility('{{ provider.provider_id }}', '{{ provider.hospital_name|escapejs }}')">
+                    <i class="fas fa-clipboard-check me-1"></i> Check Eligibility
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Eligibility Modal (Existing - Keep as is) -->
+<div class="modal fade" id="eligibilityModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">Check Eligibility - <span id="providerName"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="modalFormContainer">
+                <!-- Form will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Reset and base styles */
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        overflow-x: hidden;
+        padding-top: 0 !important;
+    }
+
+    /* Main wrapper */
+    #wrapper {
+        display: flex;
+        min-height: 100%;
+        background: #f4f7f6;
+        margin-top: 70px;
+    }
+
+    /* Main content area */
+    .main-content {
+        flex: 1;
+        margin-left: 250px;
+        transition: all 0.3s ease;
+        background: #f4f7f6;
+        display: flex;
+        flex-direction: column;
+        width: calc(100% - 250px);
+        min-height: 100vh;
+        position: relative;
+        padding-top: 0;
+    }
+
+    /* Ensure navbar is visible */
+    .navbar {
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+        border-bottom: 1px solid #dee2e6 !important;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
+
+    /* Content area spacing */
+    .content-body {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        margin-top: 60px;
+    }
+
+    /* Table container */
+    .table-scroll-container {
+        background: white;
+        border-radius: 0 0 8px 8px;
+        overflow: auto;
+    }
+
+    /* Table responsive styling */
+    table {
+        width: 100% !important;
+        min-width: 800px;
+        border-collapse: collapse;
+    }
+
+    /* Table cell padding for mobile */
+    th, td {
+        padding: 12px 8px !important;
+        vertical-align: middle !important;
+        white-space: nowrap;
+    }
+
+    /* When sidebar is closed */
+    .sidebar-closed ~ .main-content,
+    .sidebar.collapsed ~ .main-content {
+        margin-left: 50px !important;
+        width: 100% !important;
+    }
+
+    /* Modal styling */
+    .modal-content {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .modal-header {
+        padding: 1rem 1.5rem;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #dee2e6;
+    }
+
+    /* Button hover effects */
+    .btn-outline-info:hover {
+        background-color: #0dcaf0;
+        color: white;
+    }
+
+    .btn-warning:hover {
+        background-color: #e0a800;
+        border-color: #d39e00;
+        color: #212529;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 992px) {
+        .main-content {
+            margin-left: 50px !important;
+            width: 100% !important;
+        }
+
+        .content-body {
+            margin-top: 70px;
+            padding: 10px;
+        }
+
+        table {
+            min-width: 700px;
+        }
+
+        th, td {
+            padding: 10px 6px !important;
+            font-size: 14px;
+        }
+
+        .btn-sm {
+            padding: 5px 10px !important;
+            font-size: 12px;
+        }
+
+        .card-header {
+            flex-direction: column;
+            gap: 10px;
+            text-align: center;
+        }
+    }
+
+    @media (max-width: 768px) {
+        th:nth-child(4), td:nth-child(4),
+        th:nth-child(5), td:nth-child(5) {
+            display: none;
+        }
+
+        table {
+            min-width: 600px;
+        }
+
+        .content-body {
+            margin-top: 70px;
+            padding: 8px;
+        }
+
+        .card-header h5 {
+            font-size: 1.1rem;
+        }
+
+        .modal-dialog {
+            margin: 0.5rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        th:nth-child(1), td:nth-child(1) {
+            max-width: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        table {
+            min-width: 500px;
+        }
+
+        .btn {
+            padding: 4px 8px !important;
+            font-size: 11px;
+            margin-bottom: 2px;
+        }
+
+        .content-body {
+            padding: 5px;
+        }
+
+        td.text-center .btn {
+            display: inline-block;
+            width: auto;
+            margin: 2px;
+        }
+
+        .modal-body {
+            padding: 1rem;
+        }
+
+        .modal-footer .btn {
+            flex: 1;
+            margin: 0 2px;
+        }
+    }
+
+    /* Scrollbar styling */
+    .table-scroll-container::-webkit-scrollbar {
+        height: 8px;
+        width: 8px;
+    }
+
+    .table-scroll-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .table-scroll-container::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+
+    .table-scroll-container::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    /* Fix for empty state on mobile */
+    @media (max-width: 576px) {
+        .alert.d-inline-block {
+            display: block !important;
+            width: 100%;
+            text-align: center;
+        }
+    }
+
+    /* Animation for loading */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    #modalFormContainer > * {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    /* Input group styling */
+    .input-group-text {
+        background-color: #f8f9fa;
+        border-color: #dee2e6;
+    }
+
+    /* Select dropdown styling */
+    .form-select {
+        cursor: pointer;
+    }
+
+    /* Badge styling */
+    .badge {
+        font-weight: 500;
+    }
+
+    /* Error styling */
+    .is-invalid {
+        border-color: #dc3545 !important;
+    }
+
+    .is-invalid:focus {
+        box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25) !important;
+    }
+</style>
+
+<script>
+// CSRF Token Helper
+function getCsrfToken() {
+    const csrfTokenInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    if (csrfTokenInput) {
+        return csrfTokenInput.value;
+    }
+
+    const name = 'csrftoken';
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Function to close provider modal and show eligibility modal
+function closeProviderModalAndShowEligibility(providerId, providerName) {
+    // Find and close the current provider modal using Bootstrap's modal instance
+    const modalElement = document.getElementById('providerModal' + providerId);
+    if (modalElement) {
+        const currentModal = bootstrap.Modal.getInstance(modalElement);
+        if (currentModal) {
+            currentModal.hide();
+        }
+    }
+
+    // Wait for modal to close, then show eligibility modal
+    setTimeout(() => {
+        showEligibilityModal(providerId, providerName);
+    }, 300);
+}
+
+// Function to load form via AJAX
+function loadEligibilityForm(providerId, providerName) {
+    const formContainer = document.getElementById('modalFormContainer');
+
+    formContainer.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-warning" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-muted">Loading eligibility form...</p>
+        </div>
+    `;
+
+    // Load form via AJAX
+    fetch(`{% url "network_provider:get_eligibility_form" %}?provider_id=${providerId}&provider_name=${encodeURIComponent(providerName)}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': getCsrfToken(),
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.text();
+    })
+    .then(html => {
+        formContainer.innerHTML = html;
+        // Re-attach form submission handler
+        const form = document.getElementById('eligibilityForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                handleEligibilitySubmit(e, providerId, providerName, getCsrfToken());
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error loading form:', error);
+        formContainer.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Failed to load eligibility form. Please try again.
+            </div>
+            <div class="text-center mt-3">
+                <button class="btn btn-outline-warning" onclick="showEligibilityModal('${providerId}', '${providerName.replace(/'/g, "\\'")}')">
+                    <i class="fas fa-redo me-1"></i>Retry
+                </button>
+            </div>
+        `;
+    });
+}
+
+// Main function to show eligibility modal
+function showEligibilityModal(providerId, providerName) {
+    const modal = new bootstrap.Modal(document.getElementById('eligibilityModal'));
+    document.getElementById('providerName').textContent = providerName;
+
+    // Clear and show loading state
+    document.getElementById('modalFormContainer').innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-warning" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-muted">Loading eligibility form...</p>
+        </div>
+    `;
+
+    modal.show();
+
+    // Load the form after modal is shown
+    setTimeout(() => {
+        const csrfToken = getCsrfToken();
+
+        if (!csrfToken) {
+            document.getElementById('modalFormContainer').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Security token missing. Please refresh the page and try again.
+                </div>
+            `;
+            return;
+        }
+
+        // Load form via function
+        loadEligibilityForm(providerId, providerName);
+
+    }, 300);
+}
+
+// Handle form submission
+function handleEligibilitySubmit(e, providerId, providerName, csrfToken) {
+    e.preventDefault();
+
+    const form = e.target;
+    const submitBtn = document.getElementById('submitEligibilityBtn') || form.querySelector('button[type="submit"]');
+
+    // Validate all required fields
+    const requiredFields = ['policy_name', 'coverage_type', 'coverage_limit', 'validity_years'];
+    let isValid = true;
+
+    requiredFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (!field || !field.value) {
+            if (field) field.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            field.classList.remove('is-invalid');
+        }
+    });
+
+    // Validate coverage limit range
+    const coverageLimitField = document.getElementById('coverage_limit');
+    if (coverageLimitField) {
+        let coverageLimit = coverageLimitField.value;
+
+        // Remove any commas if user entered them
+        coverageLimit = coverageLimit.replace(/,/g, '');
+
+        const coverageLimitNum = parseInt(coverageLimit);
+        if (isNaN(coverageLimitNum) || coverageLimitNum < 1000 || coverageLimitNum > 10000000) {
+            coverageLimitField.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            // Update the field value with cleaned number
+            coverageLimitField.value = coverageLimitNum;
+        }
+    }
+
+    if (!isValid) {
+        alert('Please fill in all required fields correctly.');
+        return;
+    }
+
+    // Prepare form data
+    const formData = new FormData(form);
+
+    // Log what we're sending
+    console.log('Sending form data:');
+    for (let [key, value] of formData.entries()) {
+        console.log(`${key}: ${value}`);
+    }
+
+    // Save original button state
+    const originalBtnHTML = submitBtn.innerHTML;
+
+    // Show loading state
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Checking Eligibility...';
+    submitBtn.disabled = true;
+
+    // Make the AJAX request
+    fetch('{% url "network_provider:verify_eligibility" %}', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': csrfToken,
+            'Accept': 'application/json',
+        },
+        body: formData,
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            return response.text().then(text => {
+                console.error('Non-JSON response received:', text.substring(0, 500));
+                throw new Error(`Server returned non-JSON response. Status: ${response.status}`);
+            });
+        }
+
+        return response.json().then(data => {
+            if (!response.ok) {
+                throw new Error(data.message || `HTTP error! Status: ${response.status}`);
+            }
+            return data;
+        });
+    })
+    .then(data => {
+        console.log('Success response:', data);
+
+        // Determine styling based on status
+        let alertClass, iconClass, title, buttonClass;
+        if (data.eligibility_status === "Eligible") {
+            alertClass = "alert-success";
+            iconClass = "fas fa-check-circle";
+            title = "🎉 Eligible for Coverage";
+            buttonClass = "btn-success";
+        } else if (data.eligibility_status === "Not Eligible") {
+            alertClass = "alert-warning";
+            iconClass = "fas fa-exclamation-triangle";
+            title = "⚠️ Not Eligible";
+            buttonClass = "btn-warning";
+        } else {
+            alertClass = "alert-danger";
+            iconClass = "fas fa-times-circle";
+            title = "❌ Error";
+            buttonClass = "btn-danger";
+        }
+
+        // Display results
+        document.getElementById('modalFormContainer').innerHTML = `
+            <div class="${alertClass} border-0 rounded">
+                <div class="text-center py-4">
+                    <i class="${iconClass} fa-4x mb-4"></i>
+                    <h3 class="mb-3">${title}</h3>
+                    <p class="lead">${data.message}</p>
+
+                    ${data.details ? `
+                    <div class="mt-4">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title mb-2"><i class="fas fa-clipboard-list me-1"></i>Eligibility Details</h6>
+                                <div class="row small">
+                                    <div class="col-md-6">
+                                        <strong>Policy:</strong><br>${data.policy_name || 'N/A'}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Coverage Type:</strong><br>${data.coverage_type || 'N/A'}
+                                    </div>
+                                    <div class="col-md-6 mt-2">
+                                        <strong>Your Coverage:</strong><br>${data.user_coverage_limit || 'N/A'}
+                                    </div>
+                                    <div class="col-md-6 mt-2">
+                                        <strong>Validity Period:</strong><br>${data.validity_period || 'N/A'}
+                                    </div>
+                                    <div class="col-md-6 mt-2">
+                                        <strong>Hospital Limit:</strong><br>${data.hospital_limit || 'N/A'}
+                                    </div>
+                                    <div class="col-md-6 mt-2">
+                                        <strong>Policy Limit:</strong><br>${data.policy_limit || 'N/A'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <div class="mt-5 pt-3 border-top">
+                        <button class="btn ${buttonClass} px-4 me-2" data-bs-dismiss="modal">
+                            <i class="fas fa-check me-1"></i>Done
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="showEligibilityModal('${providerId}', '${providerName.replace(/'/g, "\\'")}')">
+                            <i class="fas fa-redo me-1"></i>Check Again
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    })
+    .catch(error => {
+        console.error('Eligibility check failed:', error);
+
+        // Show error message
+        document.getElementById('modalFormContainer').innerHTML = `
+            <div class="alert alert-danger border-0 rounded">
+                <div class="text-center py-4">
+                    <i class="fas fa-exclamation-triangle fa-4x text-danger mb-4"></i>
+                    <h3 class="mb-3">Request Failed</h3>
+                    <p class="lead">Unable to check eligibility. Please try again.</p>
+                    <p class="small text-muted mb-4">Error: ${error.message}</p>
+
+                    <!-- Debug info for developers -->
+                    <div class="alert alert-dark small text-start mt-3">
+                        <strong>Debug Info:</strong><br>
+                        <small>
+                            Provider ID: ${providerId}<br>
+                            Check browser console (F12) for more details
+                        </small>
+                    </div>
+
+                    <div class="mt-4">
+                        <button class="btn btn-danger px-4 me-2" onclick="showEligibilityModal('${providerId}', '${providerName.replace(/'/g, "\\'")}')">
+                            <i class="fas fa-redo me-1"></i>Try Again
+                        </button>
+                        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    })
+    .finally(() => {
+        // Restore button state
+        submitBtn.innerHTML = originalBtnHTML;
+        submitBtn.disabled = false;
+    });
+}
+
+// Make functions globally available
+window.showEligibilityModal = showEligibilityModal;
+window.closeProviderModalAndShowEligibility = closeProviderModalAndShowEligibility;
+
+// Event listener for DOM content loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle sidebar toggle
+    const mobileToggle = document.getElementById('mobileToggle');
+    if (mobileToggle) {
+        mobileToggle.addEventListener('click', function() {
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+
+            if (sidebar && mainContent) {
+                if (sidebar.classList.contains('show') || sidebar.style.display !== 'none') {
+                    // Sidebar is open, close it
+                    sidebar.classList.remove('show');
+                    sidebar.style.display = 'none';
+                    mainContent.style.marginLeft = '50px';
+                    mainContent.style.width = 'calc(100% - 50px)';
+                } else {
+                    // Sidebar is closed, open it
+                    sidebar.classList.add('show');
+                    sidebar.style.display = 'block';
+                    mainContent.style.marginLeft = '250px';
+                    mainContent.style.width = 'calc(100% - 250px)';
+                }
+            }
+        });
+    }
+
+    // Adjust table container height
+    function adjustTableHeight() {
+        const tableContainer = document.querySelector('.table-scroll-container');
+        if (tableContainer) {
+            const windowHeight = window.innerHeight;
+            const navbarHeight = document.querySelector('.navbar')?.offsetHeight || 60;
+            const cardHeaderHeight = document.querySelector('.card-header')?.offsetHeight || 60;
+            const calculatedHeight = windowHeight - navbarHeight - cardHeaderHeight - 120;
+            tableContainer.style.maxHeight = Math.max(400, calculatedHeight) + 'px';
+        }
+    }
+
+    // Initial adjustment
+    setTimeout(adjustTableHeight, 100);
+
+    // Adjust on resize
+    window.addEventListener('resize', adjustTableHeight);
+
+    // Adjust on sidebar toggle
+    if (mobileToggle) {
+        mobileToggle.addEventListener('click', function() {
+            setTimeout(adjustTableHeight, 300);
+        });
+    }
+});
+</script>
+
+<!-- Add Bootstrap JS if not already included in base.html -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

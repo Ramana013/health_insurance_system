@@ -1,0 +1,524 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block content %}
+<div id="wrapper">
+    {% include 'users/includes/sidebar.html' %}
+
+    <div class="main-content" id="main-content">
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
+            <div class="container-fluid px-4 py-2">
+                <button class="btn btn-outline-secondary d-md-none me-3" id="mobileToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h4 class="mb-0 text-primary">My Active Policies</h4>
+            </div>
+        </nav>
+
+        <!-- FIX: Content area with proper spacing -->
+        <div class="content-body p-1 p-md-4">
+            <div class="card shadow border-0">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-user-shield me-2"></i>Linked Policies: {{ request.user.username }}</h5>
+                    <a href="{% url 'policy:policy_management' %}" class="btn btn-light btn-sm fw-bold">
+                        <i class="fas fa-plus me-1"></i> Apply for New Policy
+                    </a>
+                </div>
+
+                <!-- FIX: Responsive table container -->
+                <div class="table-responsive table-scroll-container p-2" style="overflow-x: auto; min-height: 400px;">
+                    <table class="table table-striped align-middle mb-0" style="min-width: 800px;">
+                        <thead class="table-dark" style="position: sticky; top: 0; z-index: 5;">
+                            <tr>
+                                <th>Policy Id</th>
+                                <th>Policy Name</th>
+                                <th>Premium</th>
+                                <th>Coverage Limit</th>
+                                <th>Status</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for up in user_policies %}
+                            <tr>
+                                <td class="fw-bold">{{ up.policy.policy_id }}</td>
+                                <td><strong>{{ up.policy.name }}</strong></td>
+                                <td><span class="badge bg-info text-dark">₹ {{ up.policy.premium }}</span></td>
+                                <td>{{ up.policy.coverage_limit }}</td>
+                                <td>
+                                    <span class="badge rounded-pill {% if up.status == 'ACTIVE' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                                        {{ up.get_status_display }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <!-- Details button - opens modal via data attributes -->
+                                    <button class="btn btn-outline-info btn-sm me-1"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#policyModal{{ up.id }}"
+                                            aria-label="View policy details">
+                                        <i class="fas fa-eye me-1"></i> Details
+                                    </button>
+                                    <!-- Withdraw button - opens confirmation modal -->
+                                    <button class="btn btn-danger btn-sm"
+                                            onclick="confirmWithdraw('{{ up.policy.name }}', '{{ up.id }}')">
+                                        Withdraw
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-5">
+                                    <div class="alert alert-info d-inline-block">
+                                        <i class="fas fa-info-circle me-2"></i> No active policies found.
+                                        <a href="{% url 'policy:policy_management' %}" class="alert-link">Browse plans here</a>.
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% for up in user_policies %}
+<!-- Policy Details Modal -->
+<div class="modal fade" id="policyModal{{ up.id }}" tabindex="-1" aria-labelledby="policyModalLabel{{ up.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="policyModalLabel{{ up.id }}">
+                    <i class="fas fa-file-contract me-2"></i>{{ up.policy.name }} - Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small mb-1">Policy ID</label>
+                            <p class="fw-bold">{{ up.policy.policy_id }}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small mb-1">Status</label>
+                            <p>
+                                <span class="badge rounded-pill {% if up.status == 'ACTIVE' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                                    {{ up.get_status_display }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small mb-1">Premium</label>
+                            <p class="text-primary fw-bold">₹ {{ up.policy.premium }}</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small mb-1">Coverage Limit</label>
+                            <p class="fw-bold">{{ up.policy.coverage_limit }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="mb-3">
+                    <label class="form-label text-muted small mb-1">Description</label>
+                    <div class="p-3 bg-light rounded">
+                        <p class="mb-0">{{ up.policy.description }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Withdraw Confirmation Modal -->
+<div class="modal fade" id="withdrawModal" tabindex="-1" aria-labelledby="withdrawModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="withdrawModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Withdrawal
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <div class="mb-3">
+                        <i class="fas fa-question-circle fa-3x text-danger mb-3"></i>
+                        <h5>Are you sure you want to withdraw?</h5>
+                    </div>
+                    <div class="alert alert-warning">
+                        <p class="mb-1">Policy: <strong id="modalPolicyName" class="text-danger"></strong></p>
+                        <p class="mb-0 small">
+                            <i class="fas fa-exclamation-circle me-1"></i>
+                            This action cannot be undone.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Cancel
+                </button>
+                <form id="withdrawForm" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-sign-out-alt me-1"></i> Confirm Withdraw
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Reset and base styles */
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        overflow-x: hidden;
+        padding-top: 0 !important;
+    }
+
+    /* Main wrapper */
+    #wrapper {
+        display: flex;
+        min-height: 100%;
+        background: #f4f7f6;
+        margin-top: 70px;
+    }
+
+    /* FIX: Main content area */
+    .main-content {
+        flex: 1;
+        margin-left: 250px;
+        transition: all 0.3s ease;
+        background: #f4f7f6;
+        display: flex;
+        flex-direction: column;
+        width: calc(100% - 250px);
+        min-height: 100vh;
+        position: relative;
+        padding-top: 0;
+    }
+
+    /* FIX: Ensure navbar is visible */
+    .navbar {
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+        border-bottom: 1px solid #dee2e6 !important;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
+
+    /* FIX: Content area spacing */
+    .content-body {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        margin-top: 60px;
+    }
+
+    /* FIX: Table container */
+    .table-scroll-container {
+        background: white;
+        border-radius: 0 0 8px 8px;
+        overflow: auto;
+    }
+
+    /* FIX: Table responsive styling */
+    table {
+        width: 100% !important;
+        min-width: 800px;
+        border-collapse: collapse;
+    }
+
+    /* FIX: Table cell padding for mobile */
+    th, td {
+        padding: 12px 8px !important;
+        vertical-align: middle !important;
+        white-space: nowrap;
+    }
+
+    /* FIX: When sidebar is closed */
+    .sidebar-closed ~ .main-content,
+    .sidebar.collapsed ~ .main-content {
+        margin-left: 50px !important;
+        width: 100% !important;
+    }
+
+    /* Modal styling */
+    .modal-content {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .modal-header {
+        padding: 1rem 1.5rem;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #dee2e6;
+    }
+
+    /* Button hover effects */
+    .btn-outline-info:hover {
+        background-color: #0dcaf0;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background-color: #dc3545;
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(220, 53, 69, 0.2);
+    }
+
+    /* FIX: Responsive adjustments */
+    @media (max-width: 992px) {
+        .main-content {
+            margin-left: 50px !important;
+            width: 100% !important;
+        }
+
+        .content-body {
+            margin-top: 70px;
+            padding: 10px;
+        }
+
+        table {
+            min-width: 700px;
+        }
+
+        th, td {
+            padding: 10px 6px !important;
+            font-size: 14px;
+        }
+
+        .btn-sm {
+            padding: 5px 10px !important;
+            font-size: 12px;
+        }
+
+        .card-header {
+            flex-direction: column;
+            gap: 10px;
+            text-align: center;
+        }
+    }
+
+    @media (max-width: 768px) {
+        th:nth-child(4), td:nth-child(4) {
+            display: none;
+        }
+
+        table {
+            min-width: 600px;
+        }
+
+        .content-body {
+            margin-top: 70px;
+            padding: 8px;
+        }
+
+        .card-header h5 {
+            font-size: 1.1rem;
+        }
+
+        .modal-dialog {
+            margin: 0.5rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        th:nth-child(1), td:nth-child(1) {
+            max-width: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        table {
+            min-width: 500px;
+        }
+
+        .btn {
+            padding: 4px 8px !important;
+            font-size: 11px;
+            margin-bottom: 2px;
+        }
+
+        .content-body {
+            padding: 5px;
+        }
+
+        td.text-center .btn {
+            display: inline-block;
+            width: auto;
+            margin: 2px;
+        }
+
+        .modal-body {
+            padding: 1rem;
+        }
+
+        .modal-footer .btn {
+            flex: 1;
+            margin: 0 2px;
+        }
+    }
+
+    /* FIX: Scrollbar styling */
+    .table-scroll-container::-webkit-scrollbar {
+        height: 8px;
+        width: 8px;
+    }
+
+    .table-scroll-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .table-scroll-container::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+
+    .table-scroll-container::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    /* Fix for empty state on mobile */
+    @media (max-width: 576px) {
+        .alert.d-inline-block {
+            display: block !important;
+            width: 100%;
+            text-align: center;
+        }
+    }
+</style>
+
+<script>
+    // Function to handle withdraw button click
+    function confirmWithdraw(policyName, policyId) {
+    document.getElementById('modalPolicyName').innerText = policyName;
+
+    // Updated path to include 'policy/' prefix to match your URLConf
+    document.getElementById('withdrawForm').action = "/policy/withdraw/" + policyId + "/";
+
+    var myModal = new bootstrap.Modal(document.getElementById('withdrawModal'));
+    myModal.show();
+}
+
+    // Event listener for DOM content loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded, initializing modal functionality');
+
+        // Initialize Bootstrap tooltips if any
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+
+        // Add event listeners to withdraw buttons
+        const withdrawButtons = document.querySelectorAll('.withdraw-btn');
+        withdrawButtons.forEach(function(button) {
+            button.addEventListener('click', function() {
+                const policyName = this.getAttribute('data-policy-name');
+                const policyId = this.getAttribute('data-policy-id');
+                confirmWithdraw(policyName, policyId);
+            });
+        });
+
+        // Adjust content margin based on navbar height
+        const navbar = document.querySelector('.navbar');
+        const contentBody = document.querySelector('.content-body');
+
+        if (navbar && contentBody) {
+            const navbarHeight = navbar.offsetHeight;
+            contentBody.style.marginTop = (navbarHeight + 10) + 'px';
+        }
+
+        // Handle sidebar toggle
+        const mobileToggle = document.getElementById('mobileToggle');
+        if (mobileToggle) {
+            mobileToggle.addEventListener('click', function() {
+                const sidebar = document.querySelector('.sidebar');
+                const mainContent = document.querySelector('.main-content');
+
+                if (sidebar && mainContent) {
+                    if (sidebar.classList.contains('show') || sidebar.style.display !== 'none') {
+                        // Sidebar is open, close it
+                        sidebar.classList.remove('show');
+                        sidebar.style.display = 'none';
+                        mainContent.style.marginLeft = '50px';
+                        mainContent.style.width = 'calc(100% - 50px)';
+                    } else {
+                        // Sidebar is closed, open it
+                        sidebar.classList.add('show');
+                        sidebar.style.display = 'block';
+                        mainContent.style.marginLeft = '250px';
+                        mainContent.style.width = 'calc(100% - 250px)';
+                    }
+                }
+            });
+        }
+
+        // Adjust table container height
+        function adjustTableHeight() {
+            const tableContainer = document.querySelector('.table-scroll-container');
+            if (tableContainer) {
+                const windowHeight = window.innerHeight;
+                const navbarHeight = document.querySelector('.navbar')?.offsetHeight || 60;
+                const cardHeaderHeight = document.querySelector('.card-header')?.offsetHeight || 60;
+                const calculatedHeight = windowHeight - navbarHeight - cardHeaderHeight - 120;
+                tableContainer.style.maxHeight = Math.max(400, calculatedHeight) + 'px';
+            }
+        }
+
+        // Initial adjustment
+        setTimeout(adjustTableHeight, 100);
+
+        // Adjust on resize
+        window.addEventListener('resize', adjustTableHeight);
+
+        // Adjust on sidebar toggle
+        const sidebarToggle = document.getElementById('mobileToggle');
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', function() {
+                setTimeout(adjustTableHeight, 300);
+            });
+        }
+
+        // Debug: Check if Bootstrap is loaded
+        if (typeof bootstrap === 'undefined') {
+            console.error('Bootstrap not loaded! Check your scripts.');
+        } else {
+            console.log('Bootstrap loaded successfully');
+        }
+    });
+
+    // Fallback function for backward compatibility
+    window.confirmWithdraw = confirmWithdraw;
+    document.getElementById('withdrawForm').action = "/policy/withdraw/" + policyId + "/";
+</script>
+
+<!-- Add Bootstrap JS if not already included in base.html -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

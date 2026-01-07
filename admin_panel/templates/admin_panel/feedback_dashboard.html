@@ -1,0 +1,907 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block content %}
+<div id="wrapper">
+    {% include 'admin_panel/includes/admin_sidebar.html' %}
+
+    <div class="main-content" id="main-content" style="margin-top:60px;">
+        <!-- Navigation Bar -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
+            <div class="container-fluid px-4 py-2">
+                <button class="btn btn-outline-secondary d-md-none me-3" id="mobileToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h4 class="mb-0 text-primary">Feedback and Support Management</h4>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="content-body p-1 p-md-4">
+            <!-- Filters and Search Section -->
+            <div class="card shadow border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="mb-0"><i class="fas fa-filter me-2"></i>Filter & Search Feedback</h6>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3 align-items-end">
+                        <div class="col-md-3 col-lg-2">
+                            <label class="form-label small mb-1">Ticket ID</label>
+                            <input type="text" name="ticket_id" class="form-control form-control-sm"
+                                   placeholder="Enter Ticket ID" value="{{ request.GET.ticket_id|default:'' }}">
+                        </div>
+
+                        <div class="col-md-3 col-lg-2">
+                            <label class="form-label small mb-1">User</label>
+                            <input type="text" name="user" class="form-control form-control-sm"
+                                   placeholder="Search user..." value="{{ request.GET.user|default:'' }}">
+                        </div>
+
+                        <div class="col-md-3 col-lg-2">
+                            <label class="form-label small mb-1">Status</label>
+                            <select name="status" class="form-select form-select-sm">
+                                <option value="">All Statuses</option>
+                                {% for status in statuses %}
+                                <option value="{{ status }}" {% if request.GET.status == status %}selected{% endif %}>
+                                    {{ status }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-3 col-lg-2">
+                            <label class="form-label small mb-1">Category</label>
+                            <select name="category" class="form-select form-select-sm">
+                                <option value="">All Categories</option>
+                                {% for category in categories %}
+                                <option value="{{ category }}" {% if request.GET.category == category %}selected{% endif %}>
+                                    {{ category }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-4 col-lg-3">
+                            <label class="form-label small mb-1">Search</label>
+                            <div class="input-group input-group-sm">
+                                <input type="text" name="q" class="form-control"
+                                       placeholder="Search tickets..." value="{{ request.GET.q|default:'' }}">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 col-lg-1">
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'admin_panel:feedback_dashboard' %}" class="btn btn-outline-secondary btn-sm w-100">
+                                    <i class="fas fa-times me-1"></i> Clear
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tickets Table -->
+            <div class="card shadow border-0">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>All Submitted Feedbacks</h5>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="badge bg-light text-dark">{{ tickets.count }} Tickets</span>
+                        <button type="button" class="btn btn-outline-light btn-sm" onclick="refreshTickets()">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="feedback-table-wrapper p-3">
+                    <div class="table-responsive table-scroll-container">
+                        <table class="table table-bordered table-hover align-middle mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Ticket ID</th>
+                                    <th>User</th>
+                                    <th>Category</th>
+                                    <th>Description</th>
+                                    <th>Status</th>
+                                    <th>Policy Name</th>
+                                    <th>Network Provider</th>
+                                    <th>Submitted On</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ticket in tickets %}
+                                <tr>
+                                    <td class="fw-bold">{{ ticket.ticket_id }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                <span class="text-white fw-bold">{{ ticket.created_by.username|first|upper }}</span>
+                                            </div>
+                                            <span class="user-name">{{ ticket.created_by.username }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ ticket.category }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="text-truncate" title="{{ ticket.description }}">
+                                            {{ ticket.description|truncatechars:50 }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge
+                                            {% if ticket.status == 'Open' %}bg-warning
+                                            {% elif ticket.status == 'Under Review' %}bg-info
+                                            {% elif ticket.status == 'Resolved' %}bg-success
+                                            {% elif ticket.status == 'Closed' %}bg-secondary
+                                            {% else %}bg-light text-dark{% endif %}">
+                                            {{ ticket.status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ ticket.policy_name.name }}</td>
+                                    <td>{{ ticket.network_provider.name }}</td>
+                                    <td>{{ ticket.created_on|date:"Y-m-d H:i" }}</td>
+                                    <td class="text-center">
+                                        <div class="d-flex justify-content-center gap-2">
+                                            <a href="{% url 'admin_panel:view_ticket' ticket.ticket_id %}"
+                                               class="btn btn-outline-primary btn-sm"
+                                               title="View Ticket">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+
+                                            <button class="btn btn-outline-success btn-sm"
+                                                    onclick="openResolveModal('{{ ticket.ticket_id }}')"
+                                                    title="Mark as Resolved"
+                                                    {% if ticket.status == 'Closed' %}disabled{% endif %}>
+                                                <i class="fas fa-check"></i>
+                                            </button>
+
+                                            <button class="btn btn-outline-info btn-sm"
+                                                    onclick="openCommentModal('{{ ticket.ticket_id }}', '{{ ticket.description|escapejs }}')"
+                                                    title="Add Comment">
+                                                <i class="fas fa-comment"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="9" class="text-center py-5">
+                                        <div class="empty-state">
+                                            <i class="fas fa-comments fa-3x text-gray-300 mb-3"></i>
+                                            <h5 class="text-gray-500 mb-2">No Feedback Tickets Found</h5>
+                                            <p class="text-gray-500 small">
+                                                {% if request.GET.q or request.GET.status or request.GET.category %}
+                                                No tickets match your search criteria.
+                                                {% else %}
+                                                No feedback tickets have been submitted yet.
+                                                {% endif %}
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Comment Modal -->
+<div class="modal fade" id="commentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-comment me-2"></i>Add Comment
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="commentForm">
+                    {% csrf_token %}
+                    <input type="hidden" id="commentTicketId">
+                    <div class="mb-3">
+                        <label class="form-label">Ticket Description:</label>
+                        <div class="alert alert-light" id="ticketDescription"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="commentText" class="form-label">Your Comment *</label>
+                        <textarea class="form-control" id="commentText" rows="4"
+                                  placeholder="Enter your comment or ask for additional details..." required></textarea>
+                        <div class="form-text">This comment will be visible to the user.</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-primary" onclick="submitComment()">
+                    <i class="fas fa-paper-plane me-1"></i> Submit Comment
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resolve Confirmation Modal -->
+<div class="modal fade" id="resolveModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Resolution
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Are you sure you want to mark this ticket as resolved and closed?
+                </div>
+                <p class="mb-0">This action will:</p>
+                <ul class="mb-0">
+                    <li>Mark the ticket as "Resolved"</li>
+                    <li>Close the ticket</li>
+                    <li>Notify the user about the resolution</li>
+                </ul>
+                <div class="mt-3">
+                    <small class="text-muted">Ticket ID: <span id="resolveTicketIdDisplay" class="fw-bold"></span></small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-success" onclick="confirmResolveTicket()">
+                    <i class="fas fa-check me-1"></i> Yes, Mark as Resolved
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Reset and base styles */
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        overflow-x: hidden;
+        padding-top: 0 !important;
+        background: #f4f7f6;
+    }
+
+    /* Main wrapper */
+    #wrapper {
+        display: flex;
+        min-height: 100vh;
+    }
+
+    .main-content {
+        flex: 1;
+        margin-left: 250px;
+        transition: all 0.3s ease;
+        background: #f4f7f6;
+        display: flex;
+        flex-direction: column;
+        width: calc(100% - 250px);
+    }
+
+    /* When sidebar is closed */
+    #wrapper.toggled .main-content {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    /* Ensure navbar is visible */
+    .navbar {
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+        border-bottom: 1px solid #dee2e6 !important;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        background: white !important;
+    }
+
+    /* Content area spacing */
+    .content-body {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        margin-top: 20px;
+        flex: 1;
+    }
+
+    /* Table container */
+    .table-scroll-container {
+        background: white;
+        border-radius: 8px;
+        overflow: auto;
+        max-height: calc(100vh - 300px);
+    }
+
+    .feedback-table-wrapper {
+        padding: 0 !important;
+    }
+
+    /* Table responsive styling */
+    table {
+        width: 100% !important;
+        min-width: 1200px;
+        border-collapse: collapse;
+        margin-bottom: 0;
+    }
+
+    /* Table cell padding */
+    th, td {
+        padding: 12px 8px !important;
+        vertical-align: middle !important;
+        white-space: nowrap;
+    }
+
+    /* Avatar styling */
+    .avatar-sm {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+
+    .user-name {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100px;
+    }
+
+    /* Badge styling */
+    .badge {
+        padding: 5px 10px;
+        font-weight: 500;
+        border-radius: 6px;
+    }
+
+    /* Table header */
+    .table th {
+        font-weight: 600;
+        background-color: #2c3e50 !important;
+        color: white;
+        position: sticky;
+        top: 0;
+        z-index: 5;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+
+    .text-truncate {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 200px;
+        display: inline-block;
+    }
+
+    /* Empty state */
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+    }
+
+    .empty-state i {
+        opacity: 0.5;
+    }
+
+    /* Button styling */
+    .btn-sm {
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+
+    /* Modal styling */
+    .modal-content {
+        border-radius: 10px;
+        overflow: hidden;
+        border: none;
+    }
+
+    .modal-header {
+        padding: 1rem 1.5rem;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #dee2e6;
+    }
+
+    /* Scrollbar styling */
+    .table-scroll-container::-webkit-scrollbar {
+        height: 8px;
+        width: 8px;
+    }
+
+    .table-scroll-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .table-scroll-container::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+
+    .table-scroll-container::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    /* Filter section styling */
+    .form-control-sm, .form-select-sm {
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .input-group-sm {
+        flex-wrap: nowrap;
+    }
+
+    .input-group-text {
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1199px) {
+        .table-scroll-container {
+            max-height: calc(100vh - 250px);
+        }
+
+        table {
+            min-width: 1000px;
+        }
+
+        .text-truncate {
+            max-width: 150px;
+        }
+
+        .user-name {
+            max-width: 80px;
+        }
+    }
+
+    @media (max-width: 992px) {
+        .main-content {
+            margin-left: 0 !important;
+            width: 100% !important;
+        }
+
+        #wrapper.toggled .main-content {
+            margin-left: 0 !important;
+            width: 100% !important;
+        }
+
+        .content-body {
+            margin-top: 70px;
+            padding: 15px !important;
+        }
+
+        .table-scroll-container {
+            border: 1px solid #dee2e6;
+            margin: 0 -15px;
+            width: calc(100% + 30px);
+        }
+
+        /* Filter section responsive */
+        .card-body .row {
+            row-gap: 0.5rem;
+        }
+
+        .card-body .col-md-3,
+        .card-body .col-md-4,
+        .card-body .col-lg-2,
+        .card-body .col-lg-3 {
+            padding-bottom: 0.5rem;
+        }
+
+        .form-label {
+            margin-bottom: 0.25rem;
+            font-size: 0.8rem;
+        }
+
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+
+        .btn-sm i {
+            margin-right: 0 !important;
+        }
+
+        .btn-sm span {
+            display: none;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .content-body {
+            padding: 10px !important;
+            margin-top: 60px;
+        }
+
+        .table-scroll-container {
+            margin: 0 -10px;
+            width: calc(100% + 20px);
+            max-height: calc(100vh - 200px);
+        }
+
+        th, td {
+            padding: 8px 6px !important;
+            font-size: 13px;
+        }
+
+        .avatar-sm {
+            width: 28px;
+            height: 28px;
+            font-size: 12px;
+        }
+
+        .user-name {
+            max-width: 60px;
+        }
+
+        .badge {
+            padding: 3px 8px;
+            font-size: 11px;
+        }
+
+        .btn-sm {
+            padding: 3px 6px;
+            margin: 1px;
+        }
+
+        .card-header h5 {
+            font-size: 1rem;
+        }
+
+        .modal-dialog {
+            margin: 10px;
+        }
+
+        .modal-body {
+            padding: 1rem;
+        }
+
+        /* Hide less important columns on mobile */
+        th:nth-child(2), td:nth-child(2), /* User */
+        th:nth-child(6), td:nth-child(6), /* Policy Name */
+        th:nth-child(7), td:nth-child(7) { /* Network Provider */
+            display: none;
+        }
+
+        table {
+            min-width: 800px;
+        }
+
+        /* Filter section mobile */
+        .input-group {
+            flex-wrap: wrap;
+        }
+
+        .input-group input {
+            width: 48%;
+            margin-bottom: 0.25rem;
+        }
+
+        .input-group .input-group-text {
+            width: 4%;
+            min-width: 30px;
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .content-body {
+            padding: 8px !important;
+            margin-top: 60px;
+        }
+
+        .table-scroll-container {
+            margin: 0 -8px;
+            width: calc(100% + 16px);
+            max-height: calc(100vh - 180px);
+        }
+
+        th, td {
+            padding: 6px 4px !important;
+            font-size: 12px;
+        }
+
+        .avatar-sm {
+            width: 24px;
+            height: 24px;
+            font-size: 11px;
+        }
+
+        .user-name {
+            max-width: 50px;
+        }
+
+        .text-truncate {
+            max-width: 120px;
+        }
+
+        .btn-sm {
+            padding: 2px 4px;
+            font-size: 10px;
+        }
+
+        .btn-sm i {
+            margin: 0 !important;
+        }
+
+        .badge {
+            padding: 2px 6px;
+            font-size: 10px;
+        }
+
+        .modal-dialog {
+            margin: 5px;
+        }
+
+        .modal-header, .modal-footer {
+            padding: 0.75rem;
+        }
+
+        .modal-body {
+            padding: 0.75rem;
+        }
+
+        /* Hide more columns on very small screens */
+        th:nth-child(4), td:nth-child(4), /* Description */
+        th:nth-child(8), td:nth-child(8) { /* Submitted On */
+            display: none;
+        }
+
+        table {
+            min-width: 600px;
+        }
+    }
+
+    @media (max-width: 400px) {
+        th:nth-child(3), td:nth-child(3) { /* Category */
+            display: none;
+        }
+
+        table {
+            min-width: 500px;
+        }
+
+        .text-truncate {
+            max-width: 100px;
+        }
+
+        .user-name {
+            max-width: 40px;
+        }
+    }
+
+    /* Print styles */
+    @media print {
+        .navbar, .btn, .toast, .filter-section {
+            display: none !important;
+        }
+
+        .table-scroll-container {
+            overflow: visible !important;
+            max-height: none !important;
+        }
+
+        table {
+            min-width: auto !important;
+            width: 100% !important;
+        }
+
+        th, td {
+            display: table-cell !important;
+            padding: 8px !important;
+        }
+    }
+</style>
+
+<script>
+    // Check if URLs exist and create fallbacks if needed
+    let resolveUrl, addCommentUrl, viewTicketUrl;
+
+    try {
+        // Try to get URLs using Django template tags
+        resolveUrl = "{% url 'admin_panel:resolve_ticket' 'TICKET_ID' %}";
+    } catch(e) {
+        // Fallback if URL doesn't exist
+        resolveUrl = "/admin_panel/feedback/resolve/TICKET_ID/";
+    }
+
+    try {
+        addCommentUrl = "{% url 'admin_panel:add_comment' 'TICKET_ID' %}";
+    } catch(e) {
+        // Fallback if URL doesn't exist
+        addCommentUrl = "/admin_panel/feedback/comment/TICKET_ID/";
+    }
+
+    try {
+        viewTicketUrl = "{% url 'admin_panel:view_ticket' 'TICKET_ID' %}";
+    } catch(e) {
+        // Fallback if URL doesn't exist
+        viewTicketUrl = "/admin_panel/feedback/view/TICKET_ID/";
+    }
+
+    // Store the current ticket ID for resolution
+    let currentTicketId = null;
+
+    // Mobile sidebar toggle
+    document.getElementById('mobileToggle')?.addEventListener('click', function() {
+        document.getElementById('wrapper').classList.toggle('toggled');
+
+        // Adjust table container height after toggle
+        setTimeout(adjustTableHeight, 300);
+    });
+
+    function openResolveModal(ticketId) {
+        currentTicketId = ticketId;
+        document.getElementById('resolveTicketIdDisplay').textContent = ticketId;
+        const modal = new bootstrap.Modal(document.getElementById('resolveModal'));
+        modal.show();
+    }
+
+    function confirmResolveTicket() {
+        if (!currentTicketId) return;
+
+        // Replace TICKET_ID placeholder with actual ticket ID
+        const url = resolveUrl.replace('TICKET_ID', currentTicketId);
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `csrfmiddlewaretoken={{ csrf_token }}`
+        })
+        .then(response => {
+            if (response.ok) {
+                // Close the modal
+                bootstrap.Modal.getInstance(document.getElementById('resolveModal')).hide();
+                // Show success message
+                showToast('Ticket marked as resolved and closed successfully', 'success');
+                // Reload the page after a short delay
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                alert('Error resolving ticket');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error resolving ticket');
+        });
+    }
+
+    function openCommentModal(ticketId, description) {
+        document.getElementById('commentTicketId').value = ticketId;
+        document.getElementById('ticketDescription').textContent = description || 'No description available';
+        const modal = new bootstrap.Modal(document.getElementById('commentModal'));
+        modal.show();
+    }
+
+    function submitComment() {
+        const ticketId = document.getElementById('commentTicketId').value;
+        const commentText = document.getElementById('commentText').value;
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        if (!commentText.trim()) {
+            alert('Please enter a comment');
+            return;
+        }
+
+        // Replace TICKET_ID placeholder with actual ticket ID
+        const url = addCommentUrl.replace('TICKET_ID', ticketId);
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: `comment=${encodeURIComponent(commentText)}&csrfmiddlewaretoken=${csrfToken}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('commentModal')).hide();
+                document.getElementById('commentText').value = '';
+                showToast('Comment added successfully', 'success');
+                setTimeout(() => {
+                    // Replace TICKET_ID placeholder with actual ticket ID
+                    const viewUrl = viewTicketUrl.replace('TICKET_ID', ticketId);
+                    window.location.href = viewUrl;
+                }, 1000);
+            } else {
+                alert('Error adding comment');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error adding comment');
+        });
+    }
+
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-bg-${type} border-0`;
+        toast.setAttribute('role', 'alert');
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+
+        document.body.appendChild(toast);
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    function refreshTickets() {
+        location.reload();
+    }
+
+    // Adjust table height on resize
+    function adjustTableHeight() {
+        const tableContainer = document.querySelector('.table-scroll-container');
+        if (tableContainer) {
+            const windowHeight = window.innerHeight;
+            const navbarHeight = document.querySelector('.navbar').offsetHeight;
+            const cardHeaderHeight = document.querySelector('.card-header').offsetHeight;
+            const filterHeight = document.querySelector('.card.mb-4').offsetHeight;
+            const calculatedHeight = windowHeight - navbarHeight - cardHeaderHeight - filterHeight - 50;
+            tableContainer.style.maxHeight = Math.max(300, calculatedHeight) + 'px';
+        }
+    }
+
+    // Initial adjustment
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(adjustTableHeight, 100);
+
+        // Adjust on resize
+        window.addEventListener('resize', adjustTableHeight);
+    });
+
+    // Handle window resize for responsive adjustments
+    window.addEventListener('resize', function() {
+        // Force table redraw for better rendering
+        const tableContainer = document.querySelector('.table-scroll-container');
+        if (tableContainer) {
+            tableContainer.style.overflow = 'hidden';
+            setTimeout(() => {
+                tableContainer.style.overflow = 'auto';
+            }, 50);
+        }
+    });
+</script>
+{% endblock %}

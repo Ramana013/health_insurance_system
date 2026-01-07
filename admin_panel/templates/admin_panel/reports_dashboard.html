@@ -1,0 +1,994 @@
+<!-- templates/admin_panel/reports_dashboard.html -->
+{% extends 'users/base.html' %}
+
+{% load static %}
+
+{% block title %}Reports & Analytics - Admin Panel{% endblock %}
+
+{% block content %}
+<div id="wrapper">
+    {% include 'admin_panel/includes/admin_sidebar.html' %}
+
+    <div class="main-content" id="main-content" style="margin-top:60px;">
+        <!-- Toast Notification Container -->
+        <div id="statusPopup" class="position-fixed top-0 end-0 p-3" style="z-index: 2000; display: none;">
+            <div class="toast show align-items-center text-white bg-success border-0" role="alert">
+                <div class="d-flex">
+                    <div class="toast-body" id="popupMessage">
+                        Report data refreshed!
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="closePopup()"></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Bar -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
+            <div class="container-fluid px-4 py-2">
+                <button class="btn btn-outline-secondary d-md-none me-3" id="mobileToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <button class="btn btn-outline-secondary d-none d-md-block me-3" id="desktopToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h4 class="mb-0 text-primary">Reports & Analytics</h4>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary" onclick="window.location.reload()">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-success" onclick="showReportGuide()">
+                        <i class="fas fa-question-circle"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="content-body p-1 p-md-4">
+            <!-- Breadcrumb Navigation -->
+            <nav aria-label="breadcrumb" class="mb-3 mb-md-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'admin_panel:admin_dashboard' %}">
+                            <i class="fas fa-home me-1"></i>Admin Dashboard
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">
+                        <i class="fas fa-chart-bar me-1"></i>Reports & Analytics
+                    </li>
+                </ol>
+            </nav>
+
+            <!-- Filter Section -->
+            <div class="card shadow border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="mb-0"><i class="fas fa-filter me-2"></i>Filter Reports</h6>
+                </div>
+                <div class="card-body p-3">
+                    <form method="GET" class="row g-2 g-md-3 align-items-end">
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                            <label class="form-label small mb-1">Start Date</label>
+                            <input type="date" name="start_date" class="form-control form-control-sm"
+                                   value="{{ start_date|date:'Y-m-d' }}">
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                            <label class="form-label small mb-1">End Date</label>
+                            <input type="date" name="end_date" class="form-control form-control-sm"
+                                   value="{{ end_date|date:'Y-m-d' }}">
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                            <label class="form-label small mb-1">Report Type</label>
+                            <select name="report_type" class="form-select form-select-sm">
+                                <option value="all" {% if report_type == 'all' %}selected{% endif %}>All Reports</option>
+                                <option value="monthly" {% if report_type == 'monthly' %}selected{% endif %}>Monthly Trends</option>
+                                <option value="claims" {% if report_type == 'claims' %}selected{% endif %}>Claims Summary</option>
+                                <option value="provider" {% if report_type == 'provider' %}selected{% endif %}>Provider Performance</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-sm-6 col-md-8 col-lg-3">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary btn-sm flex-grow-1">
+                                    <i class="fas fa-filter me-1"></i> Apply Filter
+                                </button>
+                                <a href="{% url 'admin_panel:reports_dashboard' %}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Filter Summary -->
+            {% if start_date or end_date or report_type != 'all' %}
+            <div class="alert alert-info alert-dismissible fade show mb-4 py-2" role="alert">
+                <div class="d-flex align-items-center flex-wrap">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <div class="d-flex flex-wrap align-items-center gap-1">
+                        <strong>Active Filters:</strong>
+                        {% if start_date %}
+                            <span class="badge bg-secondary ms-1">From: {{ start_date|date:'Y-m-d' }}</span>
+                        {% endif %}
+                        {% if end_date %}
+                            <span class="badge bg-secondary ms-1">To: {{ end_date|date:'Y-m-d' }}</span>
+                        {% endif %}
+                        {% if report_type != 'all' %}
+                            <span class="badge bg-secondary ms-1">Type: {{ report_type|title }}</span>
+                        {% endif %}
+                    </div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Report Cards -->
+            <div class="row g-2 g-md-3 mb-4">
+                <!-- Claims Summary Card -->
+                <div class="col-12 col-sm-6 col-lg-3 mb-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-primary text-white py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-file-medical me-2 fs-6"></i>
+                                    <h5 class="mb-0 fs-6">Claims Summary</h5>
+                                </div>
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="text-center mb-3">
+                                <h2 class="text-primary mb-1">{{ total_claims }}</h2>
+                                <p class="text-muted mb-0 small">Total Claims</p>
+                            </div>
+                            <div class="row text-center">
+                                <div class="col-6 border-end">
+                                    <h4 class="text-success mb-1">{{ approved_claims }}</h4>
+                                    <small class="text-muted">Approved</small>
+                                </div>
+                                <div class="col-6">
+                                    <h4 class="text-warning mb-1">{{ pending_claims }}</h4>
+                                    <small class="text-muted">Pending</small>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <div class="d-grid gap-1">
+                                    <a href="{% url 'admin_panel:claims_report' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}"
+                                       class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-download me-1"></i> PDF
+                                    </a>
+                                    <a href="{% url 'admin_panel:claims_report' %}?format=csv&start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}"
+                                       class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-file-csv me-1"></i> CSV
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Policy Usage Card -->
+                <div class="col-12 col-sm-6 col-lg-3 mb-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-success text-white py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-shield-alt me-2 fs-6"></i>
+                                    <h5 class="mb-0 fs-6">Policy Usage</h5>
+                                </div>
+                                <i class="fas fa-chart-pie"></i>
+                            </div>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="text-center mb-3">
+                                <h2 class="text-success mb-1">{{ active_policies }}</h2>
+                                <p class="text-muted mb-0 small">Active Policies</p>
+                            </div>
+                            <div class="progress mb-3" style="height: 8px;">
+                                <div class="progress-bar bg-success" role="progressbar"
+                                     style="width: {{ policy_utilization }}%"
+                                     aria-valuenow="{{ policy_utilization }}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                            <p class="text-center mb-0">
+                                <small class="text-muted">{{ policy_utilization }}% Utilization</small>
+                            </p>
+                            <div class="mt-3">
+                                <div class="d-grid gap-1">
+                                    <a href="{% url 'admin_panel:policy_usage_report' %}" class="btn btn-outline-success btn-sm">
+                                        <i class="fas fa-download me-1"></i> PDF
+                                    </a>
+                                    <a href="{% url 'admin_panel:policy_usage_report' %}?format=csv" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-file-csv me-1"></i> CSV
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Provider Performance Card -->
+                <div class="col-12 col-sm-6 col-lg-3 mb-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-info text-white py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-hospital me-2 fs-6"></i>
+                                    <h5 class="mb-0 fs-6">Provider Performance</h5>
+                                </div>
+                                <i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="text-center mb-3">
+                                <h2 class="text-info mb-1">{{ total_providers }}</h2>
+                                <p class="text-muted mb-0 small">Network Providers</p>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <small>Average Rating</small>
+                                    <small>{{ avg_provider_rating }}/5</small>
+                                </div>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar bg-info" role="progressbar"
+                                         style="width: {{ rating_percentage }}%"
+                                         aria-valuenow="{{ rating_percentage }}"
+                                         aria-valuemin="0"
+                                         aria-valuemax="100">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <div class="d-grid gap-1">
+                                    <a href="{% url 'admin_panel:provider_report' %}" class="btn btn-outline-info btn-sm">
+                                        <i class="fas fa-download me-1"></i> PDF
+                                    </a>
+                                    <a href="{% url 'admin_panel:provider_report' %}?format=csv" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-file-csv me-1"></i> CSV
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monthly Trends Card -->
+                <div class="col-12 col-sm-6 col-lg-3 mb-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-warning text-white py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-chart-line me-2 fs-6"></i>
+                                    <h5 class="mb-0 fs-6">Monthly Trends</h5>
+                                </div>
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="text-center mb-3">
+                                <h2 class="text-warning mb-1">{{ monthly_growth }}%</h2>
+                                <p class="text-muted mb-0 small">Monthly Growth</p>
+                            </div>
+                            <div class="mb-3" style="height: 60px;">
+                                <canvas id="miniTrendChart" height="60"></canvas>
+                            </div>
+                            <div class="mt-3">
+                                <div class="d-grid gap-1">
+                                    <a href="{% url 'admin_panel:monthly_trends_report' %}" class="btn btn-outline-warning btn-sm">
+                                        <i class="fas fa-download me-1"></i> PDF
+                                    </a>
+                                    <a href="{% url 'admin_panel:monthly_trends_report' %}?format=csv" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-file-csv me-1"></i> CSV
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts and Tables Section -->
+            <div class="row g-3 mb-4">
+                <!-- Main Chart -->
+                <div class="col-12 col-lg-8">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white py-3">
+                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+                                <h5 class="mb-2 mb-md-0 fs-6">Monthly Trends Analysis</h5>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-primary chart-btn active" data-chart-type="claims">
+                                        <i class="fas fa-file-medical me-1"></i> Claims
+                                    </button>
+                                    <button type="button" class="btn btn-outline-success chart-btn" data-chart-type="policies">
+                                        <i class="fas fa-shield-alt me-1"></i> Policies
+                                    </button>
+                                    <button type="button" class="btn btn-outline-warning chart-btn" data-chart-type="revenue">
+                                        <i class="fas fa-dollar-sign me-1"></i> Revenue
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="chart-container" style="height: 300px;">
+                                <canvas id="trendChart" height="300"></canvas>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-light py-2">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Showing data for the last 6 months. Click buttons to switch views.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Providers Table -->
+                <div class="col-12 col-lg-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0 fs-6">Top Providers</h5>
+                                <span class="badge bg-info">{{ top_providers|length }} Providers</span>
+                            </div>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive" style="max-height: 320px;">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light sticky-top">
+                                        <tr>
+                                            <th class="ps-3">Provider</th>
+                                            <th class="text-center">Claims</th>
+                                            <th class="text-center pe-3">Rating</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for provider in top_providers %}
+                                        <tr>
+                                            <td class="ps-3">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="flex-shrink-0">
+                                                        <i class="fas fa-hospital text-info"></i>
+                                                    </div>
+                                                    <div class="flex-grow-1 ms-2">
+                                                        <small class="fw-bold">{{ provider.name|default:"N/A"|truncatechars:20 }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-primary">{{ provider.total_claims|default:"0" }}</span>
+                                            </td>
+                                            <td class="text-center pe-3">
+                                                <div class="star-rating">
+                                                    {% with rating=provider.rating|default:0 %}
+                                                        {% for i in "12345" %}
+                                                            {% if forloop.counter <= rating|add:"0" %}
+                                                                <i class="fas fa-star text-warning fs-7"></i>
+                                                            {% else %}
+                                                                <i class="far fa-star text-warning fs-7"></i>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    {% endwith %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="3" class="text-center py-4 text-muted">
+                                                <i class="fas fa-hospital fa-lg mb-2"></i>
+                                                <p class="mb-0 small">No provider data available</p>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-light py-2">
+                            <small class="text-muted">
+                                <i class="fas fa-lightbulb me-1"></i>
+                                Based on claim frequency and user ratings
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Reports Section -->
+            <div class="row g-2 mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white py-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0 fs-6">Generate Detailed Reports</h5>
+                                <button type="button" class="btn btn-sm btn-outline-info" onclick="showReportGuide()">
+                                    <i class="fas fa-info-circle me-1"></i> Guide
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="row g-2">
+                                <div class="col-6 col-md-3">
+                                    <div class="card border h-100">
+                                        <div class="card-body text-center p-3">
+                                            <i class="fas fa-file-medical fa-lg text-primary mb-2"></i>
+                                            <h6 class="fs-7">Claims Summary</h6>
+                                            <p class="text-muted small mb-3">Detailed claims data with filters</p>
+                                            <div class="d-grid gap-1">
+                                                <a href="{% url 'admin_panel:claims_report' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}"
+                                                   class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-file-pdf me-1"></i> PDF
+                                                </a>
+                                                <a href="{% url 'admin_panel:claims_report' %}?format=csv&start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}"
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-file-csv me-1"></i> CSV
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="card border h-100">
+                                        <div class="card-body text-center p-3">
+                                            <i class="fas fa-shield-alt fa-lg text-success mb-2"></i>
+                                            <h6 class="fs-7">Policy Usage</h6>
+                                            <p class="text-muted small mb-3">Policy utilization and statistics</p>
+                                            <div class="d-grid gap-1">
+                                                <a href="{% url 'admin_panel:policy_usage_report' %}" class="btn btn-sm btn-success">
+                                                    <i class="fas fa-file-pdf me-1"></i> PDF
+                                                </a>
+                                                <a href="{% url 'admin_panel:policy_usage_report' %}?format=csv" class="btn btn-sm btn-outline-success">
+                                                    <i class="fas fa-file-csv me-1"></i> CSV
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="card border h-100">
+                                        <div class="card-body text-center p-3">
+                                            <i class="fas fa-hospital fa-lg text-info mb-2"></i>
+                                            <h6 class="fs-7">Provider Report</h6>
+                                            <p class="text-muted small mb-3">Network provider performance</p>
+                                            <div class="d-grid gap-1">
+                                                <a href="{% url 'admin_panel:provider_report' %}" class="btn btn-sm btn-info">
+                                                    <i class="fas fa-file-pdf me-1"></i> PDF
+                                                </a>
+                                                <a href="{% url 'admin_panel:provider_report' %}?format=csv" class="btn btn-sm btn-outline-info">
+                                                    <i class="fas fa-file-csv me-1"></i> CSV
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <div class="card border h-100">
+                                        <div class="card-body text-center p-3">
+                                            <i class="fas fa-chart-line fa-lg text-warning mb-2"></i>
+                                            <h6 class="fs-7">Trends Report</h6>
+                                            <p class="text-muted small mb-3">Monthly trends and growth</p>
+                                            <div class="d-grid gap-1">
+                                                <a href="{% url 'admin_panel:monthly_trends_report' %}" class="btn btn-sm btn-warning">
+                                                    <i class="fas fa-file-pdf me-1"></i> PDF
+                                                </a>
+                                                <a href="{% url 'admin_panel:monthly_trends_report' %}?format=csv" class="btn btn-sm btn-outline-warning">
+                                                    <i class="fas fa-file-csv me-1"></i> CSV
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Guide Modal -->
+<div class="modal fade" id="reportGuideModal" tabindex="-1" aria-labelledby="reportGuideModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fs-6" id="reportGuideModalLabel">
+                    <i class="fas fa-book me-2"></i>Report Generation Guide
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="card border">
+                            <div class="card-body p-3">
+                                <h6 class="fs-7"><i class="fas fa-file-medical text-primary me-2"></i>Claims Summary</h6>
+                                <p class="small text-muted">Shows detailed claims data including status, amounts, and dates.</p>
+                                <ul class="small mb-0">
+                                    <li>Filter by date range</li>
+                                    <li>View approved/pending claims</li>
+                                    <li>Export as PDF or CSV</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card border">
+                            <div class="card-body p-3">
+                                <h6 class="fs-7"><i class="fas fa-shield-alt text-success me-2"></i>Policy Usage</h6>
+                                <p class="small text-muted">Analyzes policy utilization and customer adoption rates.</p>
+                                <ul class="small mb-0">
+                                    <li>Active vs total policies</li>
+                                    <li>Utilization percentages</li>
+                                    <li>Policy performance metrics</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card border">
+                            <div class="card-body p-3">
+                                <h6 class="fs-7"><i class="fas fa-hospital text-info me-2"></i>Provider Performance</h6>
+                                <p class="small text-muted">Evaluates network provider effectiveness and ratings.</p>
+                                <ul class="small mb-0">
+                                    <li>Provider claim frequency</li>
+                                    <li>User ratings and feedback</li>
+                                    <li>Performance comparisons</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card border">
+                            <div class="card-body p-3">
+                                <h6 class="fs-7"><i class="fas fa-chart-line text-warning me-2"></i>Monthly Trends</h6>
+                                <p class="small text-muted">Tracks growth patterns and seasonal variations.</p>
+                                <ul class="small mb-0">
+                                    <li>6-month trend analysis</li>
+                                    <li>Revenue growth tracking</li>
+                                    <li>Comparative month-over-month</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="alert alert-info mt-3">
+                    <h6 class="fs-7"><i class="fas fa-lightbulb me-2"></i>Tip:</h6>
+                    <p class="mb-0 small">If no actual provider data exists, the system will display sample data for demonstration purposes.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize mini trend chart
+        const miniCtx = document.getElementById('miniTrendChart').getContext('2d');
+        const miniTrendChart = new Chart(miniCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Growth',
+                    data: [12, 19, 15, 25, 22, 18],
+                    borderColor: '#ffc107',
+                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { display: false },
+                    y: { display: false }
+                }
+            }
+        });
+
+        // Initialize main trend chart
+        const trendCtx = document.getElementById('trendChart').getContext('2d');
+        let trendChart = null;
+
+        function loadChartData(chartType = 'claims') {
+            // Sample data - replace with actual API call
+            const sampleData = {
+                claims: [65, 59, 80, 81, 56, 55, 40],
+                policies: [28, 48, 40, 19, 86, 27, 90],
+                revenue: [1200, 1900, 1500, 2500, 2200, 1800, 2100]
+            };
+
+            const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'];
+            const data = sampleData[chartType] || sampleData.claims;
+
+            if (trendChart) {
+                trendChart.destroy();
+            }
+
+            trendChart = new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: chartType.charAt(0).toUpperCase() + chartType.slice(1),
+                        data: data,
+                        borderColor: chartType === 'claims' ? '#0d6efd' :
+                                   chartType === 'policies' ? '#198754' : '#ffc107',
+                        backgroundColor: chartType === 'claims' ? 'rgba(13, 110, 253, 0.1)' :
+                                        chartType === 'policies' ? 'rgba(25, 135, 84, 0.1)' : 'rgba(255, 193, 7, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { drawBorder: false }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            // Update button states
+            document.querySelectorAll('.chart-btn').forEach(btn => {
+                if (btn.dataset.chartType === chartType) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        // Set up chart button event listeners
+        document.querySelectorAll('.chart-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const chartType = this.dataset.chartType;
+                loadChartData(chartType);
+            });
+        });
+
+        // Load initial chart data
+        loadChartData('claims');
+
+        // Mobile sidebar toggle
+        const mobileToggle = document.getElementById('mobileToggle');
+        const desktopToggle = document.getElementById('desktopToggle');
+        const mainContent = document.getElementById('main-content');
+
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            if (sidebar && mainContent) {
+                const isFullScreen = mainContent.classList.contains('full-screen');
+                if (isFullScreen) {
+                    // Open sidebar
+                    sidebar.classList.remove('collapsed');
+                    mainContent.classList.remove('full-screen');
+                    mainContent.style.marginLeft = '250px';
+                    mainContent.style.width = 'calc(100% - 250px)';
+                    if (mobileToggle) mobileToggle.innerHTML = '<i class="fas fa-bars"></i>';
+                    if (desktopToggle) desktopToggle.innerHTML = '<i class="fas fa-bars"></i>';
+                } else {
+                    // Close sidebar
+                    sidebar.classList.add('collapsed');
+                    mainContent.classList.add('full-screen');
+                    mainContent.style.marginLeft = '0';
+                    mainContent.style.width = '100%';
+                    if (mobileToggle) mobileToggle.innerHTML = '<i class="fas fa-chevron-left"></i>';
+                    if (desktopToggle) desktopToggle.innerHTML = '<i class="fas fa-chevron-left"></i>';
+                }
+
+                // Resize chart after transition
+                setTimeout(() => {
+                    if (trendChart) trendChart.resize();
+                    if (miniTrendChart) miniTrendChart.resize();
+                }, 300);
+            }
+        }
+
+        if (mobileToggle) mobileToggle.addEventListener('click', toggleSidebar);
+        if (desktopToggle) desktopToggle.addEventListener('click', toggleSidebar);
+
+        // Resize charts on window resize
+        window.addEventListener('resize', function() {
+            if (trendChart) trendChart.resize();
+            if (miniTrendChart) miniTrendChart.resize();
+        });
+    });
+
+    function showReportGuide() {
+        const modal = new bootstrap.Modal(document.getElementById('reportGuideModal'));
+        modal.show();
+    }
+
+    function showPopup(message) {
+        const popup = document.getElementById('statusPopup');
+        document.getElementById('popupMessage').textContent = message;
+        popup.style.display = 'block';
+        setTimeout(() => {
+            popup.style.display = 'none';
+        }, 3000);
+    }
+
+    function closePopup() {
+        document.getElementById('statusPopup').style.display = 'none';
+    }
+
+    function showErrorPopup(message) {
+        const popup = document.getElementById('statusPopup');
+        const toast = popup.querySelector('.toast');
+        toast.classList.remove('bg-success');
+        toast.classList.add('bg-danger');
+        document.getElementById('popupMessage').textContent = message;
+        popup.style.display = 'block';
+        setTimeout(() => {
+            popup.style.display = 'none';
+            toast.classList.remove('bg-danger');
+            toast.classList.add('bg-success');
+        }, 4000);
+    }
+</script>
+
+<style>
+    /* Main layout similar to claims page */
+    #wrapper {
+        display: flex;
+    }
+
+    .main-content {
+        flex: 1;
+        transition: all 0.3s ease;
+        background: #f8f9fa;
+        margin-left: 250px;
+        width: calc(100% - 250px);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .main-content.full-screen {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+
+    .content-body {
+        flex: 1;
+        padding: 15px;
+    }
+
+    /* Cards styling */
+    .card {
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+    }
+
+    .card-header {
+        border-bottom: 1px solid rgba(0,0,0,.125);
+    }
+
+    /* Table styling */
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table th {
+        font-weight: 600;
+        font-size: 0.875rem;
+        white-space: nowrap;
+    }
+
+    .table td {
+        font-size: 0.875rem;
+        vertical-align: middle;
+    }
+
+    .table-responsive {
+        border-radius: 8px;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(0,0,0,.02);
+    }
+
+    /* Badge styling */
+    .badge {
+        padding: 0.35em 0.65em;
+        font-size: 0.75em;
+        font-weight: 600;
+    }
+
+    /* Button styling */
+    .btn-group-sm > .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    /* Progress bar */
+    .progress {
+        border-radius: 10px;
+    }
+
+    /* Star rating */
+    .star-rating {
+        font-size: 0.875rem;
+    }
+
+    /* Chart container */
+    .chart-container {
+        position: relative;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .main-content {
+            margin-left: 0 !important;
+            width: 100% !important;
+        }
+
+        .content-body {
+            padding: 10px;
+        }
+
+        .card-header h5,
+        .card-header h6 {
+            font-size: 0.9rem;
+        }
+
+        .btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .badge {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+        }
+
+        .fs-6 { font-size: 0.9rem !important; }
+        .fs-7 { font-size: 0.8rem !important; }
+    }
+
+    @media (max-width: 576px) {
+        .content-body {
+            padding: 8px;
+        }
+
+        .card-body {
+            padding: 1rem !important;
+        }
+
+        .table-responsive {
+            font-size: 0.75rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.375rem;
+        }
+
+        .btn-sm {
+            padding: 0.2rem 0.4rem;
+            font-size: 0.7rem;
+        }
+
+        .badge {
+            font-size: 0.65rem;
+            padding: 0.2rem 0.4rem;
+        }
+
+        .fs-6 { font-size: 0.85rem !important; }
+        .fs-7 { font-size: 0.75rem !important; }
+
+        /* Make filter form stack better */
+        .filter-section .col-12 {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Adjust chart container for mobile */
+        .chart-container {
+            height: 250px !important;
+        }
+    }
+
+    @media (max-width: 400px) {
+        .content-body {
+            padding: 6px;
+        }
+
+        .card {
+            margin-bottom: 0.75rem;
+        }
+
+        .table {
+            font-size: 0.7rem;
+        }
+
+        .btn {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.4rem;
+        }
+
+        /* Stack report cards vertically on very small screens */
+        .col-12.col-sm-6.col-lg-3 {
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
+    }
+
+    /* Filter section specific styles */
+    .filter-section .form-control-sm,
+    .filter-section .form-select-sm {
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .filter-section .input-group-sm {
+        flex-wrap: nowrap;
+    }
+
+    .filter-section .input-group-text {
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+        .filter-section .row {
+            row-gap: 0.5rem;
+        }
+
+        .filter-section .col-md-3,
+        .filter-section .col-md-4 {
+            padding-bottom: 0.5rem;
+        }
+
+        .filter-section .form-label {
+            margin-bottom: 0.25rem;
+            font-size: 0.8rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .filter-section .input-group {
+            flex-wrap: wrap;
+        }
+
+        .filter-section .input-group input {
+            width: 48%;
+            margin-bottom: 0.25rem;
+        }
+
+        .filter-section .input-group .input-group-text {
+            width: 4%;
+            min-width: 30px;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,948 @@
+<!-- templates/admin_panel/view_ticket.html -->
+{% extends 'users/base.html' %}
+
+{% load static %}
+
+{% block title %}{{ page_title }} - Admin Panel{% endblock %}
+
+{% block content %}
+    {% include 'admin_panel/includes/admin_sidebar.html' %}
+
+<div class="main-content" id="main-content" style="margin-top:60px;">
+    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
+        <div class="container-fluid px-4 py-2">
+            <button class="btn btn-outline-secondary d-md-none me-3" id="mobileToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <button class="btn btn-outline-secondary d-none d-md-block me-3" id="desktopToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h4 class="mb-0 text-primary">Ticket Details</h4>
+            <div class="btn-group" role="group">
+                <a href="{% url 'admin_panel:feedback_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Back
+                </a>
+                <button type="button" class="btn btn-outline-primary ms-2" onclick="window.location.reload()">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Content area -->
+    <div class="content-body p-1 p-md-4">
+        <!-- Breadcrumb Navigation -->
+        <nav aria-label="breadcrumb" class="mb-3 mb-md-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'admin_panel:feedback_dashboard' %}">
+                        <i class="fas fa-headset me-1"></i>Feedback & Support
+                    </a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">Ticket #{{ ticket.ticket_id }}</li>
+            </ol>
+        </nav>
+
+        <!-- Main Content Row -->
+        <div class="row g-3 g-md-4">
+            <!-- Left Column - Ticket Information -->
+            <div class="col-lg-8">
+                <div class="card shadow border-0 h-100">
+                    <div class="card-header bg-primary text-white py-3">
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+                            <div class="d-flex align-items-center mb-2 mb-md-0">
+                                <i class="fas fa-ticket-alt me-2"></i>
+                                <h5 class="mb-0">Ticket #{{ ticket.ticket_id }}</h5>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge rounded-pill fs-6
+                                    {% if ticket.status == 'Open' %}bg-warning
+                                    {% elif ticket.status == 'Under Review' %}bg-info
+                                    {% elif ticket.status == 'Resolved' %}bg-success
+                                    {% elif ticket.status == 'Closed' %}bg-secondary
+                                    {% else %}bg-light text-dark{% endif %}">
+                                    {{ ticket.status }}
+                                </span>
+                                {% if ticket.status != 'Closed' %}
+                                <button class="btn btn-sm btn-success" onclick="markAsResolved()">
+                                    <i class="fas fa-check me-1"></i> Resolve
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <!-- Ticket Details Grid -->
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-user text-primary me-2"></i>
+                                    <strong>User:</strong>
+                                </div>
+                                <div class="ps-4">
+                                    <span class="fw-bold">{{ ticket.created_by.username }}</span>
+                                    <br>
+                                    <small class="text-muted">{{ ticket.created_by.email }}</small>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-tag text-primary me-2"></i>
+                                    <strong>Category:</strong>
+                                </div>
+                                <div class="ps-4">
+                                    <span class="badge bg-info">{{ ticket.category }}</span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-calendar-plus text-primary me-2"></i>
+                                    <strong>Submitted:</strong>
+                                </div>
+                                <div class="ps-4">
+                                    <span class="d-block">{{ ticket.created_on|date:"F d, Y" }}</span>
+                                    <small class="text-muted">{{ ticket.created_on|date:"H:i" }}</small>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-calendar-check text-primary me-2"></i>
+                                    <strong>Last Updated:</strong>
+                                </div>
+                                <div class="ps-4">
+                                    <span class="d-block">{{ ticket.updated_on|date:"F d, Y" }}</span>
+                                    <small class="text-muted">{{ ticket.updated_on|date:"H:i" }}</small>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-file-contract text-primary me-2"></i>
+                                    <strong>Policy:</strong>
+                                </div>
+                                <div class="ps-4">
+                                    {{ ticket.policy_name.name }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-hospital text-primary me-2"></i>
+                                    <strong>Network Provider:</strong>
+                                </div>
+                                <div class="ps-4">
+                                    {{ ticket.network_provider.name }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Description Section -->
+                        <div class="mb-4">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fas fa-align-left text-primary me-2"></i>
+                                <strong>Description:</strong>
+                            </div>
+                            <div class="card bg-light border-0 mt-2">
+                                <div class="card-body">
+                                    <div class="ticket-description" style="max-height: 300px; overflow-y: auto;">
+                                        <p class="mb-0">{{ ticket.description|linebreaks }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Status Update Form -->
+                        <form method="POST" class="border-top pt-4">
+                            {% csrf_token %}
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-exchange-alt text-primary me-2"></i>
+                                        <label class="form-label fw-bold mb-0">Update Status:</label>
+                                    </div>
+                                    <div class="input-group">
+                                        <select name="status" class="form-select" style="max-width: 200px;">
+                                            {% for status in status_choices %}
+                                            <option value="{{ status }}" {% if ticket.status == status %}selected{% endif %}>
+                                                {{ status }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save me-1"></i> Update
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Comments Section -->
+            <div class="col-lg-4">
+                <div class="card shadow border-0 h-100">
+                    <div class="card-header bg-info text-white py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-comments me-2"></i>
+                                <h5 class="mb-0">Comments</h5>
+                            </div>
+                            <span class="badge bg-light text-dark">{{ comments.count }}</span>
+                        </div>
+                    </div>
+
+                    <div class="card-body d-flex flex-column p-0">
+                        <!-- Add Comment Form -->
+                        <div class="p-3 border-bottom">
+                            <form method="POST" action="{% url 'admin_panel:add_comment' ticket.ticket_id %}">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Add Comment:</label>
+                                    <textarea name="comment" class="form-control" rows="3"
+                                              placeholder="Enter your comment or ask for additional details..."
+                                              required></textarea>
+                                    <div class="form-text text-muted small">This comment will be visible to the user.</div>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-paper-plane me-1"></i> Add Comment
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Comments List -->
+                        <div class="comments-container flex-grow-1" style="overflow-y: auto;">
+                            <div class="p-3">
+                                {% for comment in comments %}
+                                <div class="comment-item mb-3 pb-3 border-bottom {% if comment.is_admin %}border-start border-primary border-3 ps-3{% endif %}">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <div class="d-flex align-items-center">
+                                            <strong class="{% if comment.is_admin %}text-primary{% else %}text-secondary{% endif %}">
+                                                <i class="fas {% if comment.is_admin %}fa-user-shield{% else %}fa-user{% endif %} me-1"></i>
+                                                {{ comment.user.username }}
+                                            </strong>
+                                            {% if comment.is_admin %}
+                                            <span class="badge bg-primary ms-1 small">Admin</span>
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">{{ comment.created_at|date:"M d, H:i" }}</small>
+                                    </div>
+                                    <div class="comment-text mt-2">
+                                        {{ comment.comment|linebreaks }}
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-comment-slash fa-2x text-muted mb-3"></i>
+                                    <p class="text-muted mb-0">No comments yet</p>
+                                    <p class="small text-muted">Add the first comment to start the conversation.</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification Container -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <strong class="me-auto">Notification</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toastMessage">
+            <!-- Toast message will appear here -->
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Reset and base styles */
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        overflow-x: hidden;
+        padding-top: 0 !important;
+        background: #f4f7f6;
+    }
+
+    /* Main wrapper */
+    .main-content {
+        margin-left: 250px;
+        transition: all 0.3s ease;
+        background: #f4f7f6;
+        display: flex;
+        flex-direction: column;
+        width: calc(100% - 250px);
+        min-height: 100vh;
+        position: relative;
+        padding-top: 0;
+    }
+
+    /* When sidebar is closed - FULL SCREEN MODE */
+    .main-content.full-screen {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    /* Ensure navbar is visible */
+    .navbar {
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+        border-bottom: 1px solid #dee2e6 !important;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        background: white !important;
+        transition: all 0.3s ease;
+    }
+
+    /* Content area spacing */
+    .content-body {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        margin-top: 20px;
+        flex: 1;
+        transition: all 0.3s ease;
+    }
+
+    /* Breadcrumb styling */
+    .breadcrumb {
+        background-color: #f8f9fa;
+        padding: 0.75rem 1rem;
+        border-radius: 0.375rem;
+        margin-bottom: 1rem;
+    }
+
+    .breadcrumb-item a {
+        text-decoration: none;
+        color: #6c757d;
+    }
+
+    .breadcrumb-item a:hover {
+        color: #0d6efd;
+    }
+
+    .breadcrumb-item.active {
+        color: #495057;
+        font-weight: 500;
+    }
+
+    /* Card styling */
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+        border: none;
+        transition: all 0.3s ease;
+    }
+
+    .card-header {
+        padding: 1rem 1.25rem;
+    }
+
+    .card-body {
+        padding: 1.25rem;
+    }
+
+    /* Badge styling */
+    .badge {
+        padding: 5px 10px;
+        font-weight: 500;
+        border-radius: 6px;
+    }
+
+    .badge.rounded-pill {
+        padding: 4px 12px;
+    }
+
+    /* Comments styling */
+    .comments-container {
+        max-height: 400px;
+    }
+
+    .comment-item:last-child {
+        border-bottom: none !important;
+        padding-bottom: 0 !important;
+        margin-bottom: 0 !important;
+    }
+
+    .comment-text {
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+
+    .ticket-description {
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+
+    .ticket-description::-webkit-scrollbar,
+    .comments-container::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .ticket-description::-webkit-scrollbar-track,
+    .comments-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+    }
+
+    .ticket-description::-webkit-scrollbar-thumb,
+    .comments-container::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 3px;
+    }
+
+    .ticket-description::-webkit-scrollbar-thumb:hover,
+    .comments-container::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    /* Form elements */
+    .input-group {
+        flex-wrap: nowrap;
+    }
+
+    .form-select {
+        min-width: 150px;
+    }
+
+    /* Toast notification */
+    .toast {
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 1199px) {
+        .content-body {
+            margin-top: 15px;
+        }
+
+        .card-body {
+            padding: 1rem;
+        }
+
+        .ticket-description {
+            max-height: 250px;
+        }
+
+        .comments-container {
+            max-height: 350px;
+        }
+    }
+
+    @media (max-width: 992px) {
+        .main-content {
+            margin-left: 0 !important;
+            width: 100% !important;
+        }
+
+        .main-content.full-screen {
+            margin-left: 0 !important;
+            width: 100% !important;
+        }
+
+        .content-body {
+            margin-top: 70px;
+            padding: 15px !important;
+        }
+
+        .main-content.full-screen .content-body {
+            padding: 15px !important;
+        }
+
+        /* Stack columns on tablet */
+        .row.g-3.g-md-4 {
+            flex-direction: column;
+        }
+
+        .col-lg-8, .col-lg-4 {
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        .card-header {
+            padding: 0.75rem 1rem;
+        }
+
+        .card-header h5 {
+            font-size: 1.1rem;
+        }
+
+        .navbar .btn-group {
+            display: flex;
+            gap: 5px;
+        }
+
+        .navbar .btn {
+            padding: 6px 10px;
+            font-size: 14px;
+        }
+
+        .navbar .btn i {
+            margin-right: 0 !important;
+        }
+
+        .navbar .btn span {
+            display: none;
+        }
+
+        .breadcrumb {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .content-body {
+            margin-top: 60px;
+            padding: 10px !important;
+        }
+
+        .main-content.full-screen .content-body {
+            padding: 10px !important;
+        }
+
+        .card-header {
+            padding: 0.75rem;
+        }
+
+        .card-header h5 {
+            font-size: 1rem;
+        }
+
+        .card-body {
+            padding: 0.75rem;
+        }
+
+        .ticket-description {
+            max-height: 200px;
+        }
+
+        .comments-container {
+            max-height: 300px;
+        }
+
+        .input-group {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .input-group .form-select {
+            max-width: 100% !important;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        .input-group .btn {
+            width: 100%;
+        }
+
+        .row.mb-4 .col-md-6 {
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        .comment-text {
+            font-size: 0.9rem;
+        }
+
+        .ticket-description {
+            font-size: 0.9rem;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            font-size: 0.85rem;
+        }
+
+        .navbar h4 {
+            font-size: 1.1rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .content-body {
+            padding: 8px !important;
+            margin-top: 60px;
+        }
+
+        .main-content.full-screen .content-body {
+            padding: 8px !important;
+        }
+
+        .card {
+            margin-bottom: 0.75rem;
+        }
+
+        .card-header {
+            padding: 0.5rem 0.75rem;
+        }
+
+        .card-header h5 {
+            font-size: 0.95rem;
+        }
+
+        .card-body {
+            padding: 0.75rem;
+        }
+
+        .ticket-description {
+            max-height: 180px;
+            font-size: 0.85rem;
+        }
+
+        .comments-container {
+            max-height: 250px;
+        }
+
+        .comment-item {
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.75rem;
+        }
+
+        .comment-text {
+            font-size: 0.85rem;
+        }
+
+        .ps-4 {
+            padding-left: 1rem !important;
+        }
+
+        .form-label {
+            font-size: 0.9rem;
+        }
+
+        .form-control, .form-select {
+            font-size: 0.9rem;
+            padding: 0.375rem 0.75rem;
+        }
+
+        .btn {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .navbar {
+            padding: 0.5rem 1rem;
+        }
+
+        .navbar h4 {
+            font-size: 1rem;
+            max-width: 150px;
+        }
+
+        .navbar .btn {
+            padding: 5px 8px;
+            font-size: 13px;
+        }
+
+        .breadcrumb {
+            padding: 0.4rem 0.5rem;
+            font-size: 0.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Hide icons on very small screens */
+        .d-flex.align-items-center i.fa {
+            font-size: 14px;
+        }
+    }
+
+    @media (max-width: 400px) {
+        .content-body {
+            padding: 5px !important;
+        }
+
+        .main-content.full-screen .content-body {
+            padding: 5px !important;
+        }
+
+        .card-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
+        }
+
+        .card-header h5 {
+            font-size: 0.9rem;
+        }
+
+        .card-body {
+            padding: 0.5rem;
+        }
+
+        .row.mb-4 {
+            margin-bottom: 0.5rem !important;
+        }
+
+        .row.mb-4 .mb-3 {
+            margin-bottom: 0.5rem !important;
+        }
+
+        .ticket-description {
+            max-height: 150px;
+            font-size: 0.8rem;
+        }
+
+        .comments-container {
+            max-height: 200px;
+        }
+
+        .navbar h4 {
+            font-size: 0.9rem;
+            max-width: 120px;
+        }
+
+        .navbar .btn {
+            padding: 4px 6px;
+            font-size: 12px;
+        }
+
+        .breadcrumb {
+            padding: 0.3rem 0.4rem;
+            font-size: 0.75rem;
+            margin-bottom: 0.4rem;
+        }
+
+        /* Hide labels on very small screens */
+        .d-flex.align-items-center strong {
+            font-size: 0.85rem;
+        }
+
+        .ps-4 {
+            padding-left: 0.75rem !important;
+            font-size: 0.85rem;
+        }
+    }
+
+    /* Full screen mode adjustments */
+    .main-content.full-screen .card {
+        border-radius: 0 !important;
+        margin-left: -15px;
+        margin-right: -15px;
+        width: calc(100% + 30px);
+    }
+
+    @media (max-width: 992px) {
+        .main-content.full-screen .card {
+            margin-left: -10px;
+            margin-right: -10px;
+            width: calc(100% + 20px);
+        }
+    }
+
+    @media (max-width: 576px) {
+        .main-content.full-screen .card {
+            margin-left: -5px;
+            margin-right: -5px;
+            width: calc(100% + 10px);
+        }
+    }
+
+    /* Print styles */
+    @media print {
+        .navbar, .btn, .toast, .breadcrumb, .form-control, .form-select, .input-group {
+            display: none !important;
+        }
+
+        .main-content {
+            margin-left: 0 !important;
+            width: 100% !important;
+        }
+
+        .card {
+            border: 1px solid #000 !important;
+            box-shadow: none !important;
+        }
+
+        .card-header {
+            background-color: #fff !important;
+            color: #000 !important;
+            border-bottom: 2px solid #000 !important;
+        }
+
+        .badge {
+            border: 1px solid #000 !important;
+            background-color: #fff !important;
+            color: #000 !important;
+        }
+    }
+</style>
+
+<script>
+    // Check if URLs exist and create fallbacks if needed
+    let resolveUrl;
+
+    try {
+        // Try to get URL using Django template tags
+        resolveUrl = "{% url 'admin_panel:resolve_ticket' ticket.ticket_id %}";
+    } catch(e) {
+        // Fallback if URL doesn't exist
+        resolveUrl = "/admin_panel/feedback/resolve/{{ ticket.ticket_id }}/";
+    }
+
+    // Mobile sidebar toggle functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        const mobileToggle = document.getElementById('mobileToggle');
+        const desktopToggle = document.getElementById('desktopToggle');
+        const mainContent = document.querySelector('.main-content');
+
+        // Function to toggle sidebar
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+
+            if (sidebar && mainContent) {
+                if (mainContent.classList.contains('full-screen')) {
+                    // Open sidebar (exit full screen)
+                    sidebar.classList.remove('collapsed');
+                    mainContent.classList.remove('full-screen');
+
+                    // Update toggle button icon
+                    if (mobileToggle) mobileToggle.innerHTML = '<i class="fas fa-bars"></i>';
+                    if (desktopToggle) desktopToggle.innerHTML = '<i class="fas fa-bars"></i>';
+                } else {
+                    // Close sidebar (enter full screen)
+                    sidebar.classList.add('collapsed');
+                    mainContent.classList.add('full-screen');
+
+                    // Update toggle button icon
+                    if (mobileToggle) mobileToggle.innerHTML = '<i class="fas fa-chevron-left"></i>';
+                    if (desktopToggle) desktopToggle.innerHTML = '<i class="fas fa-chevron-left"></i>';
+                }
+
+                // Adjust content after toggle
+                setTimeout(adjustContentHeight, 300);
+            }
+        }
+
+        // Add event listeners to toggle buttons
+        if (mobileToggle) {
+            mobileToggle.addEventListener('click', toggleSidebar);
+        }
+
+        if (desktopToggle) {
+            desktopToggle.addEventListener('click', toggleSidebar);
+        }
+
+        // Adjust content height
+        function adjustContentHeight() {
+            const commentsContainer = document.querySelector('.comments-container');
+            const ticketDescription = document.querySelector('.ticket-description');
+
+            if (commentsContainer) {
+                const windowHeight = window.innerHeight;
+                const navbarHeight = document.querySelector('.navbar').offsetHeight;
+                const cardHeaderHeight = document.querySelector('.card-header').offsetHeight;
+                const calculatedHeight = windowHeight - navbarHeight - cardHeaderHeight - 200;
+
+                if (calculatedHeight > 200) {
+                    commentsContainer.style.maxHeight = calculatedHeight + 'px';
+                }
+            }
+
+            if (ticketDescription && mainContent.classList.contains('full-screen')) {
+                ticketDescription.style.maxHeight = '400px';
+            }
+        }
+
+        // Initial adjustment
+        setTimeout(adjustContentHeight, 100);
+
+        // Adjust on resize
+        window.addEventListener('resize', adjustContentHeight);
+
+        // Check initial sidebar state
+        const sidebar = document.querySelector('.sidebar');
+        if (sidebar && sidebar.classList.contains('collapsed')) {
+            mainContent.classList.add('full-screen');
+            if (mobileToggle) mobileToggle.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            if (desktopToggle) desktopToggle.innerHTML = '<i class="fas fa-chevron-left"></i>';
+        }
+
+        // Handle window resize for responsive adjustments
+        window.addEventListener('resize', function() {
+            // On mobile, always use full width
+            if (window.innerWidth < 992) {
+                mainContent.classList.add('full-screen');
+            }
+        });
+
+        // Trigger initial resize check
+        window.dispatchEvent(new Event('resize'));
+    });
+
+    function markAsResolved() {
+        if (confirm('Are you sure you want to mark this ticket as resolved and closed?')) {
+            fetch(resolveUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `csrfmiddlewaretoken={{ csrf_token }}`
+            })
+            .then(response => {
+                if (response.ok) {
+                    showToast('Ticket marked as resolved successfully!', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showToast('Error marking ticket as resolved', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Error marking ticket as resolved', 'danger');
+            });
+        }
+    }
+
+    function showToast(message, type = 'info') {
+        const toastEl = document.getElementById('liveToast');
+        const toastBody = document.getElementById('toastMessage');
+
+        // Set message and styling
+        toastBody.textContent = message;
+        toastEl.className = `toast bg-${type} text-white`;
+
+        // Show the toast
+        const toast = new bootstrap.Toast(toastEl);
+        toast.show();
+    }
+
+    // Auto-refresh comments every 30 seconds
+    setInterval(() => {
+        fetch(`{% url 'admin_panel:get_comments' ticket.ticket_id %}`)
+            .then(response => response.json())
+            .then(data => {
+                console.log('Checking for new comments...');
+            })
+            .catch(error => console.error('Error checking comments:', error));
+    }, 30000);
+</script>
+{% endblock %}

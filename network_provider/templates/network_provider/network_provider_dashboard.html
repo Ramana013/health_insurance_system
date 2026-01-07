@@ -1,0 +1,215 @@
+{% extends 'users/base.html' %}
+
+{% block content %}
+<div class="container py-4" style="margin-top:50px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h3 mb-0 text-primary fw-bold">Network Provider Dashboard</h2>
+            <p class="text-muted small mb-0">Manage your connected hospitals and clinics</p>
+        </div>
+        <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addProviderModal">
+            <i class="fas fa-plus-circle me-1"></i> Add New Provider
+        </button>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-primary text-white p-3">
+                <small class="text-uppercase opacity-75 fw-bold">Total Network</small>
+                <h2 class="mb-0">{{ total_count }}</h2>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-success text-white p-3">
+                <small class="text-uppercase opacity-75 fw-bold">Active Centers</small>
+                <h2 class="mb-0">{{ active_count }}</h2>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-info text-white p-3">
+                <small class="text-uppercase opacity-75 fw-bold">Cashless Facility</small>
+                <h2 class="mb-0">{{ cashless_count }}</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 text-dark">My Registered Providers</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Provider ID</th>
+                            <th>Hospital Name</th>
+                            <th>Location</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for provider in providers %}
+                        <tr>
+                            <td class="ps-3 fw-bold text-muted">{{ provider.provider_id }}</td>
+                            <td class="fw-bold">{{ provider.hospital_name }}</td>
+                            <td>{{ provider.location|truncatechars:35 }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ provider.type }}</span></td>
+                            <td>
+                                {% if provider.status == 'Active' %}
+                                <span class="badge bg-success-soft text-success"><i class="fas fa-check-circle me-1"></i>Active</span>
+                                {% else %}
+                                <span class="badge bg-secondary-soft text-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group" role="group">
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-primary edit-provider-btn"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#editProviderModal"
+                                            data-id="{{ provider.pk }}"
+                                            data-provider_id="{{ provider.provider_id }}"
+                                            data-hospital_name="{{ provider.hospital_name }}"
+                                            data-location="{{ provider.location }}"
+                                            data-contact="{{ provider.contact }}"
+                                            data-type="{{ provider.type }}"
+                                            data-network_type="{{ provider.network_type }}"
+                                            data-coverage_limit="{{ provider.coverage_limit }}"
+                                            data-status="{{ provider.status }}"
+                                            data-email="{{ provider.email }}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+
+                                    <a href="{% url 'network_provider:delete_provider' provider.pk %}"
+                                       class="btn btn-sm btn-outline-danger">
+                                         <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="fas fa-hospital fa-3x mb-3 opacity-25"></i>
+                                <p>No providers found. Click "Add New Provider" to get started.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addProviderModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg shadow-lg">
+        <div class="modal-content border-0">
+            <form method="post" novalidate>
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-plus-circle me-2"></i>Register New Provider</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body bg-light">
+                    {% csrf_token %}
+                    <div class="row">
+                        {% for field in form %}
+                        <div class="col-md-{% if field.name == 'location' %}12{% else %}6{% endif %} mb-3">
+                            <label class="form-label fw-bold small text-secondary">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                                <div class="text-danger x-small mt-1">{{ field.errors|striptags }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="modal-footer border-0 bg-light">
+                    <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary px-5 shadow-sm">Save Provider</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editProviderModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg shadow-lg">
+        <div class="modal-content border-0">
+            <form method="post" id="editProviderForm" novalidate>
+                {% csrf_token %}
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-edit me-2"></i>Update Provider Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body bg-light">
+                    <div class="row">
+                        {% for field in form %}
+                        <div class="col-md-{% if field.name == 'location' %}12{% else %}6{% endif %} mb-3">
+                            <label class="form-label fw-bold small text-secondary">{{ field.label }}</label>
+
+                            {% if field.name == 'status' or field.name == 'type' or field.name == 'network_type' %}
+                                <select name="{{ field.name }}" id="edit_{{ field.name }}" class="form-select">
+                                    {% for value, text in field.field.choices %}
+                                        <option value="{{ value }}">{{ text }}</option>
+                                    {% endfor %}
+                                </select>
+                            {% elif field.name == 'location' %}
+                                <textarea name="{{ field.name }}" id="edit_{{ field.name }}" class="form-control" rows="2"></textarea>
+                            {% else %}
+                                <input type="{{ field.field.widget.input_type|default:'text' }}"
+                                       name="{{ field.name }}"
+                                       id="edit_{{ field.name }}"
+                                       class="form-control">
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="modal-footer border-0 bg-light">
+                    <button type="button" class="btn btn-link text-muted" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success px-5 shadow-sm">Apply Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-success-soft { background-color: #e8f5e9; border-radius: 50px; padding: 5px 12px; }
+    .bg-secondary-soft { background-color: #f5f5f5; border-radius: 50px; padding: 5px 12px; }
+    .x-small { font-size: 0.75rem; }
+    .table thead th { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; color: #6c757d; }
+    .form-control:focus, .form-select:focus { border-color: #0d6efd; box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.1); }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const editButtons = document.querySelectorAll('.edit-provider-btn');
+    const editForm = document.getElementById('editProviderForm');
+
+    editButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const pk = this.getAttribute('data-id');
+            editForm.action = `/network_provider/provider/${pk}/edit/`;
+
+            const fields = [
+                'provider_id', 'hospital_name', 'location', 'contact',
+                'type', 'network_type', 'coverage_limit', 'status', 'email'
+            ];
+
+            fields.forEach(field => {
+                const inputElement = document.getElementById(`edit_${field}`);
+                if (inputElement) {
+                    const value = this.getAttribute(`data-${field}`);
+                    inputElement.value = value || '';
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

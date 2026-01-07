@@ -1,0 +1,404 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block content %}
+<div id="wrapper">
+    {% include 'users/includes/sidebar.html' %}
+
+    <div class="main-content" id="main-content" style="margin-top:70px;">
+        <!-- Navigation Bar -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
+            <div class="container-fluid px-4 py-2">
+                <button class="btn btn-outline-secondary d-md-none me-3" id="mobileToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h4 class="mb-0 text-primary fw-bold">Policy Holder Dashboard</h4>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="content-body p-1 p-md-4">
+            <!-- Welcome Banner -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm bg-primary text-white">
+                        <div class="card-body p-3 p-md-4">
+                            <h5 class="fw-bold mb-2">Welcome, {{ request.user.username }}!</h5>
+                            <p class="mb-0 opacity-75">Your dashboard is the central hub for managing your health insurance policies.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature Cards -->
+            <div class="row mb-4">
+                <!-- Policy Management Card -->
+                <div class="col-md-6 col-lg-4 mb-3 mb-md-4">
+                    <div class="card h-100 border-0 shadow-sm border-start border-success border-4" onclick="window.location.href='{% url 'policy:policy_management' %}'" style="cursor: pointer; transition: transform 0.2s;">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="rounded-circle bg-success bg-opacity-10 p-2 p-md-3 me-3">
+                                    <i class="fas fa-file-contract fa-lg fa-2x text-success"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1 text-muted small">Policy Management</h6>
+                                    <h5 class="mb-0 fw-bold">{{ active_policy_count|default:0 }} Active</h5>
+                                </div>
+                            </div>
+                            <p class="text-muted mb-3">View available plans, apply for new policies, and check your current coverage.</p>
+                            <div class="text-end">
+                                <a href="{% url 'policy:policy_management' %}" class="text-success small fw-bold text-decoration-none">
+                                    Manage Policies <i class="fas fa-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Claim Management Card -->
+                <div class="col-md-6 col-lg-4 mb-3 mb-md-4">
+                    <div class="card h-100 border-0 shadow-sm border-start border-primary border-4" onclick="window.location.href='{% url 'claims:claim_dashboard' %}'" style="cursor: pointer; transition: transform 0.2s;">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="rounded-circle bg-primary bg-opacity-10 p-2 p-md-3 me-3">
+                                    <i class="fas fa-file-medical fa-lg fa-2x text-primary"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1 text-muted small">Claim Management</h6>
+                                    <h5 class="mb-0 fw-bold">
+                                        {% if claims_count %}
+                                            {{ claims_count }} Filed
+                                        {% else %}
+                                            0 Filed
+                                        {% endif %}
+                                    </h5>
+                                </div>
+                            </div>
+                            <p class="text-muted mb-3">File new claims, track existing claims, and view claim history and status.</p>
+                            <div class="text-end">
+                                <a href="{% url 'claims:claim_dashboard' %}" class="text-primary small fw-bold text-decoration-none">
+                                    Manage Claims <i class="fas fa-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Network Provider Card -->
+                <div class="col-md-6 col-lg-4 mb-3 mb-md-4">
+                    <div class="card h-100 border-0 shadow-sm border-start border-info border-4" onclick="window.location.href='{% url 'network_provider:provider_dashboard' %}'" style="cursor: pointer; transition: transform 0.2s;">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="rounded-circle bg-info bg-opacity-10 p-2 p-md-3 me-3">
+                                    <i class="fas fa-hospital-user fa-lg fa-2x text-info"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1 text-muted small">Network Management</h6>
+                                    <h5 class="mb-0 fw-bold">
+                                        {% if active_count %}
+                                            {{ active_count }} Active
+                                        {% else %}
+                                            Explore
+                                        {% endif %}
+                                    </h5>
+                                </div>
+                            </div>
+                            <p class="text-muted mb-3">Search for network hospitals, check cashless eligibility, and view provider locations.</p>
+                            <div class="text-end">
+                                <a href="{% url 'network_provider:provider_dashboard' %}" class="text-info small fw-bold text-decoration-none">
+                                    Find Hospitals <i class="fas fa-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            <!-- Quick Status -->
+            <div class="row">
+                <div class="col-lg-8 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white py-3">
+                            <h6 class="mb-0 fw-bold text-primary">
+                                <i class="fas fa-info-circle me-2"></i> Quick Status Summary
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="list-group list-group-flush">
+                                <div class="list-group-item d-flex justify-content-between align-items-center py-3 border-0">
+                                    <span class="d-flex align-items-center">
+                                        <i class="fas fa-file-contract text-success me-2"></i>
+                                        Active Policy Count
+                                    </span>
+                                    <span class="badge bg-success rounded-pill fs-6">{{ active_policy_count|default:0 }}</span>
+                                </div>
+                                {% if claims_count %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center py-3 border-0">
+                                    <span class="d-flex align-items-center">
+                                        <i class="fas fa-file-invoice-dollar text-primary me-2"></i>
+                                        Total Claims Filed
+                                    </span>
+                                    <span class="badge bg-primary rounded-pill fs-6">{{ claims_count|default:0 }}</span>
+                                </div>
+                                {% endif %}
+                                {% if stats %}
+                                <div class="list-group-item py-3 border-0">
+                                    <span class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-chart-bar text-info me-2"></i>
+                                        Claims Summary
+                                    </span>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        {% if stats.approved %}
+                                        <span class="badge bg-success p-2">
+                                            <i class="fas fa-check me-1"></i> {{ stats.approved }} Approved
+                                        </span>
+                                        {% endif %}
+                                        {% if stats.pending %}
+                                        <span class="badge bg-warning text-dark p-2">
+                                            <i class="fas fa-clock me-1"></i> {{ stats.pending }} Pending
+                                        </span>
+                                        {% endif %}
+                                        {% if stats.rejected %}
+                                        <span class="badge bg-danger p-2">
+                                            <i class="fas fa-times me-1"></i> {{ stats.rejected }} Rejected
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-white py-3">
+                            <h6 class="mb-0 fw-bold">
+                                <i class="fas fa-bell me-2"></i> Recent Activity
+                            </h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="list-group list-group-flush">
+                                <div class="list-group-item border-0 py-3 px-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-light p-2 me-3">
+                                            <i class="fas fa-user-check text-primary"></i>
+                                        </div>
+                                        <div>
+                                            <p class="mb-1 small fw-bold">Welcome to Health Insurance</p>
+                                            <p class="mb-0 text-muted small">Account created successfully</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% if active_policy_count and active_policy_count > 0 %}
+                                <div class="list-group-item border-0 py-3 px-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-light p-2 me-3">
+                                            <i class="fas fa-shield-alt text-success"></i>
+                                        </div>
+                                        <div>
+                                            <p class="mb-1 small fw-bold">Active Policies</p>
+                                            <p class="mb-0 text-muted small">You have {{ active_policy_count }} active policy{{ active_policy_count|pluralize }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="list-group-item border-0 py-3 px-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-light p-2 me-3">
+                                            <i class="fas fa-plus-circle text-info"></i>
+                                        </div>
+                                        <div>
+                                            <p class="mb-1 small fw-bold">Get Started</p>
+                                            <p class="mb-0 text-muted small">Apply for your first health insurance policy</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% if claims_count and claims_count > 0 %}
+                                <div class="list-group-item border-0 py-3 px-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-light p-2 me-3">
+                                            <i class="fas fa-file-medical text-primary"></i>
+                                        </div>
+                                        <div>
+                                            <p class="mb-1 small fw-bold">Claims Activity</p>
+                                            <p class="mb-0 text-muted small">You have {{ claims_count }} claim{{ claims_count|pluralize }} filed</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Mobile sidebar toggle
+        const mobileToggle = document.getElementById('mobileToggle');
+        const wrapper = document.getElementById('wrapper');
+
+        if (mobileToggle) {
+            mobileToggle.addEventListener('click', function() {
+                wrapper.classList.toggle('toggled');
+            });
+        }
+
+        // Card hover effects
+        const cards = document.querySelectorAll('.card[style*="cursor: pointer"]');
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px)';
+                this.style.boxShadow = '0 10px 20px rgba(0,0,0,0.1)';
+            });
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = '';
+            });
+        });
+
+        // Sync sidebar with main content
+        const sidebar = document.querySelector("#sidebar");
+        const mainContent = document.querySelector(".main-content");
+
+        if (sidebar && mainContent) {
+            const observer = new MutationObserver(() => {
+                if (sidebar.classList.contains("collapsed")) {
+                    mainContent.style.marginLeft = "70px";
+                } else {
+                    mainContent.style.marginLeft = "250px";
+                }
+            });
+
+            observer.observe(sidebar, { attributes: true });
+        }
+    });
+
+    // Handle window resize for responsiveness
+    window.addEventListener('resize', function() {
+        const wrapper = document.getElementById('wrapper');
+        if (window.innerWidth >= 768 && wrapper.classList.contains('toggled')) {
+            wrapper.classList.remove('toggled');
+        }
+    });
+</script>
+
+<!-- Responsive CSS -->
+<style>
+    #wrapper {
+        display: flex;
+        width: 100%;
+        overflow-x: hidden;
+    }
+
+    .main-content {
+        width: 100%;
+        transition: all 0.3s;
+        background-color: #f8f9fa;
+        min-height: 100vh;
+    }
+
+    .content-body {
+        transition: all 0.3s;
+    }
+
+    /* Mobile responsive styles */
+    @media (max-width: 768px) {
+        #wrapper.toggled .main-content {
+            margin-left: 0;
+        }
+
+        .main-content {
+            margin-left: 0 !important;
+        }
+
+        .content-body {
+            padding: 0.5rem !important;
+        }
+
+        .card-body {
+            padding: 1rem !important;
+        }
+
+        h4, h5, h6 {
+            font-size: 0.9rem !important;
+        }
+
+        .fa-2x {
+            font-size: 1.5em !important;
+        }
+
+        .list-group-item {
+            padding: 0.75rem 1rem !important;
+        }
+
+        .badge {
+            font-size: 0.75rem !important;
+            padding: 0.25em 0.6em !important;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .card {
+            margin-bottom: 0.75rem !important;
+        }
+
+        .navbar h4 {
+            font-size: 1.1rem !important;
+        }
+
+        .row {
+            margin-left: -0.5rem !important;
+            margin-right: -0.5rem !important;
+        }
+
+        .col-md-6, .col-lg-4 {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+        }
+    }
+
+    /* Card styling */
+    .card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .card:hover {
+        transition: all 0.3s ease;
+    }
+
+    /* Feature card specific styling */
+    .border-success {
+        border-left-color: #198754 !important;
+    }
+
+    .border-primary {
+        border-left-color: #0d6efd !important;
+    }
+
+    .border-info {
+        border-left-color: #0dcaf0 !important;
+    }
+
+    /* List group styling */
+    .list-group-item {
+        border-left: 0;
+        border-right: 0;
+    }
+
+    .list-group-item:first-child {
+        border-top: 0;
+    }
+
+    .list-group-item:last-child {
+        border-bottom: 0;
+    }
+</style>
+{% endblock %}

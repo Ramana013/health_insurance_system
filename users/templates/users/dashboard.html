@@ -1,0 +1,133 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="d-flex" id="wrapper">
+    <!-- Sidebar -->
+    {% include 'users/includes/sidebar.html' %}
+    
+    <!-- Page Content -->
+    <div class="main-content" id="main-content">
+        <!-- Top Navigation -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container-fluid">
+                <button class="btn btn-link d-md-none" id="sidebarToggleMobile">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h4 class="mb-0">Dashboard</h4>
+            </div>
+        </nav>
+        
+        <!-- Main Content -->
+        <div class="container-fluid p-4">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Welcome to Health Insurance Portal</h5>
+                            <p class="card-text">
+                                This is your dashboard. Select an option from the sidebar to get started.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Additional styles for the dashboard */
+#wrapper {
+    overflow-x: hidden;
+}
+
+.navbar {
+    padding: 15px 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background: #fff !important;
+    border-bottom: 1px solid #e3e6f0;
+}
+
+.card {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    margin-bottom: 20px;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .main-content {
+        margin-left: 0 !important;
+    }
+    
+    .sidebar {
+        transform: translateX(-100%);
+        z-index: 1050;
+    }
+    
+    .sidebar.show {
+        transform: translateX(0);
+    }
+    
+    .main-content.expanded {
+        margin-left: 0 !important;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebarToggleMobile = document.getElementById('sidebarToggleMobile');
+    const mainContent = document.getElementById('main-content');
+    
+    // Toggle sidebar on desktop
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('collapsed');
+            if (window.innerWidth > 768) {
+                mainContent.classList.toggle('expanded');
+            }
+        });
+    }
+    
+    // Toggle sidebar on mobile
+    if (sidebarToggleMobile) {
+        sidebarToggleMobile.addEventListener('click', function() {
+            sidebar.classList.toggle('show');
+        });
+    }
+    
+    // Close sidebar when clicking outside on mobile
+    document.addEventListener('click', function(event) {
+        if (window.innerWidth <= 768 && 
+            !sidebar.contains(event.target) && 
+            !event.target.matches('#sidebarToggleMobile') &&
+            !event.target.closest('#sidebarToggleMobile')) {
+            sidebar.classList.remove('show');
+        }
+    });
+    
+    // Handle window resize
+    window.addEventListener('resize', function() {
+        if (window.innerWidth > 768) {
+            sidebar.classList.remove('show');
+            if (sidebar.classList.contains('collapsed')) {
+                mainContent.classList.add('expanded');
+            }
+        } else {
+            if (mainContent.classList.contains('expanded')) {
+                mainContent.classList.remove('expanded');
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

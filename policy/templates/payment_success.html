@@ -1,0 +1,40 @@
+{% extends 'users/base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="card shadow border-0 p-5">
+                <div class="mb-4">
+                    <i class="fas fa-check-circle text-success" style="font-size: 5rem;"></i>
+                </div>
+                <h2 class="fw-bold text-dark">Payment Successful!</h2>
+                <p class="text-muted mb-4">
+                    Thank you for choosing <strong>{{ policy.name }}</strong>.
+                    Your policy is now active and has been added to your profile.
+                </p>
+
+                <div class="bg-light p-3 rounded mb-4 text-start">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Policy ID:</span>
+                        <span class="fw-bold">{{ policy.policy_id }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Amount Paid:</span>
+                        <span class="fw-bold text-success">₹ {{ policy.premium }}</span>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <a href="{% url 'policy:my_policies' %}" class="btn btn-primary btn-lg">
+                        View My Policies
+                    </a>
+                    <a href="{% url 'users:policy_dashboard' %}" class="btn btn-outline-secondary">
+                        Go to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

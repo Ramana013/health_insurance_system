@@ -1,0 +1,572 @@
+{% extends 'users/base.html' %}
+{% block content %}
+    {% include 'users/includes/sidebar.html' %}
+
+<div class="main-content" id="main-content" style="margin-top:70px;">
+    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
+        <div class="container-fluid px-4 py-2">
+            <button class="btn btn-outline-secondary d-md-none me-3" id="mobileToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h4 class="mb-0 text-primary">Feedback & Support Dashboard</h4>
+            <a href="{% url 'feedback_support:submit_feedback' %}" class="btn btn-primary ms-auto">
+                <i class="fas fa-plus-circle me-1"></i> Submit New Feedback
+            </a>
+        </div>
+    </nav>
+
+    <!-- Content area -->
+    <div class="content-body p-1 p-md-4">
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-primary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                    Total Feedbacks</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_feedbacks }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-comments fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-warning shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                    Open Feedbacks</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ open_feedbacks }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-clock fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-info shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                    Under Review</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ under_review_feedbacks }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-search fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-success shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                    Closed Feedbacks</div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ closed_feedbacks }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Feedbacks Table -->
+        <div class="card shadow border-0">
+            <div class="card-header bg-primary text-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-comments me-2"></i>Recent Feedbacks</h5>
+                    <a href="{% url 'feedback_support:feedback_list' %}" class="btn btn-light btn-sm">
+                        View All <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if recent_feedbacks %}
+                <div class="table-responsive table-scroll-container p-2" style="overflow-x: auto; min-height: 400px;">
+                    <table class="table table-striped align-middle mb-0" style="min-width: 800px;">
+                        <thead class="table-dark" style="position: sticky; top: 0; z-index: 5;">
+                            <tr>
+                                <th>Ticket ID</th>
+                                <th>Category</th>
+                                <th>Description</th>
+                                <th>Status</th>
+                                <th>Policy Name</th>
+                                <th>Created On</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for feedback in recent_feedbacks %}
+                            <tr>
+                                <td class="fw-bold">{{ feedback.ticket_id }}</td>
+                                <td>{{ feedback.category }}</td>
+                                <td class="small">{{ feedback.description|truncatechars:50 }}</td>
+                                <td>
+                                    <span class="badge rounded-pill
+                                        {% if feedback.status.name == 'Open' %}bg-warning
+                                        {% elif feedback.status.name == 'Closed' %}bg-success
+                                        {% else %}bg-info{% endif %}">
+                                        {{ feedback.status }}
+                                    </span>
+                                </td>
+                                <td>{{ feedback.policy_name }}</td>
+                                <td>{{ feedback.created_on|date:"Y-m-d" }}</td>
+                                <td class="text-center">
+                                    <div class="btn-group gap-1" role="group">
+                                        <a href="{% url 'feedback_support:view_feedback' feedback.ticket_id %}"
+                                           class="btn btn-outline-info btn-sm me-1">
+                                            <i class="fas fa-eye me-1"></i> View
+                                        </a>
+                                        <a href="{% url 'feedback_support:edit_feedback' feedback.ticket_id %}"
+                                           class="btn btn-warning btn-sm">
+                                            <i class="fas fa-edit me-1"></i> Edit
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-comments fa-3x text-gray-300 mb-3"></i>
+                    <h5 class="text-gray-500">No feedbacks submitted yet</h5>
+                    <p class="text-gray-500">Submit your first feedback to get started</p>
+                    <a href="{% url 'feedback_support:submit_feedback' %}" class="btn btn-primary mt-2">
+                        <i class="fas fa-plus-circle me-1"></i> Submit Feedback
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Links & Categories -->
+        <div class="row mt-4">
+            <div class="col-md-6 mb-4">
+                <div class="card shadow border-0">
+                    <div class="card-header bg-white py-3">
+                        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-bolt me-2"></i>Quick Actions</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            <a href="{% url 'feedback_support:submit_feedback' %}" class="list-group-item list-group-item-action border-0">
+                                <i class="fas fa-plus-circle text-primary me-2"></i>
+                                Submit New Feedback
+                            </a>
+                            <a href="{% url 'feedback_support:feedback_list' %}" class="list-group-item list-group-item-action border-0">
+                                <i class="fas fa-list text-primary me-2"></i>
+                                View All Feedbacks
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-4">
+                <div class="card shadow border-0">
+                    <div class="card-header bg-white py-3">
+                        <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-tags me-2"></i>Feedback Categories</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="badge bg-primary p-2">Claim</span>
+                            <span class="badge bg-success p-2">Policy Enquiry</span>
+                            <span class="badge bg-info p-2">Network Provider</span>
+                            <span class="badge bg-warning p-2">Service</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Reset and base styles */
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        overflow-x: hidden;
+        padding-top: 0 !important;
+    }
+
+    /* Main wrapper */
+    #wrapper {
+        display: flex;
+        min-height: 100%;
+        background: #f4f7f6;
+        margin-top: 70px;
+    }
+
+    /* Main content area */
+    .main-content {
+        flex: 1;
+        margin-left: 250px;
+        transition: all 0.3s ease;
+        background: #f4f7f6;
+        display: flex;
+        flex-direction: column;
+        width: calc(100% - 250px);
+        min-height: 100vh;
+        position: relative;
+        padding-top: 0;
+    }
+
+    /* Ensure navbar is visible */
+    .navbar {
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+        border-bottom: 1px solid #dee2e6 !important;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
+
+    /* Content area spacing */
+    .content-body {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        margin-top: 60px;
+    }
+
+    /* Table container */
+    .table-scroll-container {
+        background: white;
+        border-radius: 0 0 8px 8px;
+        overflow: auto;
+    }
+
+    /* Table responsive styling */
+    table {
+        width: 100% !important;
+        min-width: 800px;
+        border-collapse: collapse;
+    }
+
+    /* Table cell padding */
+    th, td {
+        padding: 12px 8px !important;
+        vertical-align: middle !important;
+    }
+
+    /* Card styling */
+    .card {
+        border: none;
+        border-radius: 10px;
+    }
+
+    .card-header {
+        border-radius: 10px 10px 0 0 !important;
+    }
+
+    /* When sidebar is closed */
+    .sidebar-closed ~ .main-content,
+    .sidebar.collapsed ~ .main-content {
+        margin-left: 50px !important;
+        width: 100% !important;
+    }
+
+    /* Button hover effects */
+    .btn-outline-info:hover {
+        background-color: #0dcaf0;
+        color: white;
+    }
+
+    .btn-warning:hover {
+        background-color: #e0a800;
+        border-color: #d39e00;
+        color: #212529;
+    }
+
+    /* Statistics cards */
+    .border-left-primary {
+        border-left: 4px solid #4e73df !important;
+    }
+
+    .border-left-warning {
+        border-left: 4px solid #f6c23e !important;
+    }
+
+    .border-left-info {
+        border-left: 4px solid #36b9cc !important;
+    }
+
+    .border-left-success {
+        border-left: 4px solid #1cc88a !important;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1200px) {
+        .col-xl-3 {
+            flex: 0 0 50%;
+            max-width: 50%;
+        }
+    }
+
+    @media (max-width: 992px) {
+        .main-content {
+            margin-left: 50px !important;
+            width: 100% !important;
+        }
+
+        .content-body {
+            margin-top: 70px;
+            padding: 10px;
+        }
+
+        table {
+            min-width: 700px;
+        }
+
+        th, td {
+            padding: 10px 6px !important;
+            font-size: 14px;
+        }
+
+        .btn-sm {
+            padding: 5px 10px !important;
+            font-size: 12px;
+        }
+
+        .card-header {
+            flex-direction: column;
+            gap: 10px;
+            text-align: center;
+        }
+
+        .col-xl-3 {
+            flex: 0 0 50%;
+            max-width: 50%;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .col-xl-3 {
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
+
+        th:nth-child(5), td:nth-child(5),
+        th:nth-child(6), td:nth-child(6) {
+            display: none;
+        }
+
+        table {
+            min-width: 600px;
+        }
+
+        .content-body {
+            margin-top: 70px;
+            padding: 8px;
+        }
+
+        .card-header h5 {
+            font-size: 1.1rem;
+        }
+
+        .navbar .btn-primary {
+            font-size: 14px;
+            padding: 5px 10px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        th:nth-child(2), td:nth-child(2) {
+            display: none;
+        }
+
+        table {
+            min-width: 500px;
+        }
+
+        .btn-group .btn {
+            padding: 4px 8px !important;
+            font-size: 11px;
+            margin-bottom: 2px;
+        }
+
+        .content-body {
+            padding: 5px;
+        }
+
+        td.text-center .btn {
+            display: inline-block;
+            width: auto;
+            margin: 2px;
+        }
+
+        .col-md-6 {
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
+
+        .navbar h4 {
+            font-size: 1.1rem;
+        }
+    }
+
+    /* Scrollbar styling */
+    .table-scroll-container::-webkit-scrollbar {
+        height: 8px;
+        width: 8px;
+    }
+
+    .table-scroll-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .table-scroll-container::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+
+    .table-scroll-container::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    /* Fix for empty state on mobile */
+    @media (max-width: 576px) {
+        .text-center.py-5 {
+            padding: 2rem 1rem !important;
+        }
+    }
+
+    /* Animation for cards */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    /* Badge styling */
+    .badge {
+        font-weight: 500;
+    }
+
+    /* List group styling */
+    .list-group-item {
+        border: none;
+        border-radius: 8px !important;
+        margin-bottom: 5px;
+        transition: all 0.2s;
+    }
+
+    .list-group-item:hover {
+        background-color: #f8f9fa;
+        transform: translateX(5px);
+    }
+
+    /* Empty state styling */
+    .fa-3x {
+        opacity: 0.5;
+    }
+</style>
+
+<script>
+// Event listener for DOM content loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle sidebar toggle
+    const mobileToggle = document.getElementById('mobileToggle');
+    if (mobileToggle) {
+        mobileToggle.addEventListener('click', function() {
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+
+            if (sidebar && mainContent) {
+                if (sidebar.classList.contains('show') || sidebar.style.display !== 'none') {
+                    // Sidebar is open, close it
+                    sidebar.classList.remove('show');
+                    sidebar.style.display = 'none';
+                    mainContent.style.marginLeft = '50px';
+                    mainContent.style.width = 'calc(100% - 50px)';
+                } else {
+                    // Sidebar is closed, open it
+                    sidebar.classList.add('show');
+                    sidebar.style.display = 'block';
+                    mainContent.style.marginLeft = '250px';
+                    mainContent.style.width = 'calc(100% - 250px)';
+                }
+            }
+        });
+    }
+
+    // Adjust table container height
+    function adjustTableHeight() {
+        const tableContainer = document.querySelector('.table-scroll-container');
+        if (tableContainer) {
+            const windowHeight = window.innerHeight;
+            const navbarHeight = document.querySelector('.navbar')?.offsetHeight || 60;
+            const cardHeaderHeight = document.querySelector('.card-header')?.offsetHeight || 60;
+            const calculatedHeight = windowHeight - navbarHeight - cardHeaderHeight - 120;
+            tableContainer.style.maxHeight = Math.max(400, calculatedHeight) + 'px';
+        }
+    }
+
+    // Initial adjustment
+    setTimeout(adjustTableHeight, 100);
+
+    // Adjust on resize
+    window.addEventListener('resize', adjustTableHeight);
+
+    // Adjust on sidebar toggle
+    if (mobileToggle) {
+        mobileToggle.addEventListener('click', function() {
+            setTimeout(adjustTableHeight, 300);
+        });
+    }
+
+    // Add hover effects to table rows
+    const tableRows = document.querySelectorAll('tbody tr');
+    tableRows.forEach(row => {
+        row.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = '#f8f9fa';
+            this.style.cursor = 'pointer';
+            this.style.transition = 'background-color 0.2s';
+        });
+
+        row.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = '';
+        });
+
+        // Make entire row clickable (goes to view page)
+        row.addEventListener('click', function(e) {
+            // Don't trigger if clicking on buttons
+            if (!e.target.closest('.btn')) {
+                const viewBtn = this.querySelector('a[href*="view_feedback"]');
+                if (viewBtn) {
+                    window.location.href = viewBtn.href;
+                }
+            }
+        });
+    });
+});
+</script>
+
+<!-- Add Bootstrap JS if not already included in base.html -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

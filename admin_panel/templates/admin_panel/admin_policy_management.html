@@ -1,0 +1,430 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block content %}
+<div id="wrapper">
+    {% include 'admin_panel/includes/admin_sidebar.html' %}
+
+    <div class="main-content" id="main-content" style="margin-top: 60px;">
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
+            <div class="container-fluid px-4 py-2">
+                <button class="btn btn-outline-secondary d-md-none me-3" id="mobileToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h4 class="mb-0 text-primary">Policy Management</h4>
+            </div>
+        </nav>
+
+        <div class="content-body p-1 p-md-4">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm border-0 mb-3" role="alert">
+                        {% if message.tags == 'success' %}
+                            <i class="fas fa-check-circle me-2"></i>
+                        {% else %}
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                        {% endif %}
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Filter/Search Section -->
+            <div class="card shadow border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="mb-0"><i class="fas fa-filter me-2"></i>Filter & Search Policies</h6>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="" class="row g-3 align-items-end">
+                        <!-- Search by Policy Name -->
+                        <div class="col-md-3 col-lg-3">
+                            <label class="form-label small mb-1">Policy Name</label>
+                            <input type="text" name="policy_name" class="form-control form-control-sm"
+                                   placeholder="Search policy name..." value="{{ request.GET.policy_name|default:'' }}">
+                        </div>
+
+                        <!-- Search by Policy ID -->
+                        <div class="col-md-2 col-lg-2">
+                            <label class="form-label small mb-1">Policy ID</label>
+                            <input type="text" name="policy_id" class="form-control form-control-sm"
+                                   placeholder="Policy ID" value="{{ request.GET.policy_id|default:'' }}">
+                        </div>
+
+                        <!-- Search by Username -->
+                        <div class="col-md-3 col-lg-2">
+                            <label class="form-label small mb-1">Username</label>
+                            <input type="text" name="username" class="form-control form-control-sm"
+                                   placeholder="Search user..." value="{{ request.GET.username|default:'' }}">
+                        </div>
+
+                        <!-- Filter by Status -->
+                        <div class="col-md-2 col-lg-2">
+                            <label class="form-label small mb-1">Status</label>
+                            <select name="status" class="form-select form-select-sm">
+                                <option value="">All Status</option>
+                                <option value="ACTIVE" {% if request.GET.status == "ACTIVE" %}selected{% endif %}>Active</option>
+                                <option value="INACTIVE" {% if request.GET.status == "INACTIVE" %}selected{% endif %}>Inactive</option>
+                                <option value="PENDING" {% if request.GET.status == "PENDING" %}selected{% endif %}>Pending</option>
+                            </select>
+                        </div>
+
+                        <!-- Premium Range -->
+                        <div class="col-md-4 col-lg-3">
+                            <label class="form-label small mb-1">Premium Range</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" name="premium_min" class="form-control"
+                                       placeholder="Min" value="{{ request.GET.premium_min|default:'' }}">
+                                <span class="input-group-text">to</span>
+                                <input type="number" name="premium_max" class="form-control"
+                                       placeholder="Max" value="{{ request.GET.premium_max|default:'' }}">
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="col-md-4 col-lg-2">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary btn-sm w-100">
+                                    <i class="fas fa-search me-1"></i> Search
+                                </button>
+                                <a href="{% url 'admin_panel:admin_policy_management' %}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Filter Summary -->
+            {% if request.GET.policy_name or request.GET.policy_id or request.GET.username or request.GET.status or request.GET.premium_min or request.GET.premium_max %}
+            <div class="alert alert-info alert-dismissible fade show mb-4 py-2" role="alert">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <div>
+                        <strong>Active Filters:</strong>
+                        {% if request.GET.policy_name %} Policy: <span class="badge bg-secondary">{{ request.GET.policy_name }}</span> {% endif %}
+                        {% if request.GET.policy_id %} ID: <span class="badge bg-secondary">{{ request.GET.policy_id }}</span> {% endif %}
+                        {% if request.GET.username %} User: <span class="badge bg-secondary">{{ request.GET.username }}</span> {% endif %}
+                        {% if request.GET.status %} Status: <span class="badge bg-secondary">{{ request.GET.status }}</span> {% endif %}
+                        {% if request.GET.premium_min or request.GET.premium_max %}
+                            Premium:
+                            {% if request.GET.premium_min %}<span class="badge bg-secondary">Min: {{ request.GET.premium_min }}</span>{% endif %}
+                            {% if request.GET.premium_max %}<span class="badge bg-secondary">Max: {{ request.GET.premium_max }}</span>{% endif %}
+                        {% endif %}
+                    </div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card shadow border-0 mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Policy Management - Admin Panel</h5>
+                    <button class="btn btn-light btn-sm fw-bold" id="addPolicyBtn">
+                        <i class="fas fa-plus me-1"></i> Add Policy
+                    </button>
+                </div>
+            </div>
+
+            <div class="card shadow border-0 mb-4" id="addPolicyForm" style="display: none;">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Add New Policy</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Policy Name *</label>
+                                <input type="text" class="form-control" name="policy_name" placeholder="e.g. Family Floater Gold" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Policy ID *</label>
+                                <input type="text" class="form-control" name="policy_id" placeholder="e.g. PLM001" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description *</label>
+                            <textarea class="form-control" name="description" rows="2" placeholder="Describe the policy coverage and benefits..." required></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Premium (₹) *</label>
+                                <input type="number" class="form-control" name="premium" placeholder="e.g. 1750" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Coverage Limit *</label>
+                                <input type="text" class="form-control" name="coverage_limit" placeholder="e.g. 5 Lakh / 1 Crore" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Validity *</label>
+                                <input type="text" class="form-control" name="validity_period" placeholder="e.g. 1 Year / 2 Years" required>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-secondary" id="cancelAddBtn">Cancel</button>
+                            <button type="submit" name="add_policy" class="btn btn-success">Save Policy</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow border-0">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-list-alt me-2"></i>Available Policies
+                        {% if user_policies %}
+                        <small class="text-white-50">({{ user_policies|length }} policies found)</small>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="table-responsive p-2">
+                    <table class="table table-striped align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Premium</th>
+                                <th>Coverage</th>
+                                <th>Validity</th>
+                                <th>Status</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for up in user_policies %}
+                            <tr>
+                                <td class="fw-bold">{{ up.policy.policy_id }}</td>
+                                <td>
+                                    <strong>{{ up.policy.name }}</strong><br>
+                                    <small class="text-muted">User: {{ up.user.username }}</small>
+                                </td>
+                                <td class="text-muted">{{ up.policy.description|truncatechars:40 }}</td>
+                                <td><span class="badge bg-warning text-dark">₹ {{ up.policy.premium }}</span></td>
+                                <td>{{ up.policy.coverage_limit }}</td>
+                                <td>{{ up.policy.validity }}</td>
+                                <td>
+                                    <span class="badge {% if up.status == 'ACTIVE' %}bg-success{% elif up.status == 'PENDING' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                        {{ up.status }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-outline-primary btn-sm edit-policy-btn"
+                                            data-policy-id="{{ up.id }}"
+                                            data-policy-display-id="{{ up.policy.policy_id }}"
+                                            data-policy-name="{{ up.policy.name }}"
+                                            data-policy-description="{{ up.policy.description }}"
+                                            data-policy-premium="{{ up.policy.premium }}"
+                                            data-policy-status="{{ up.status }}">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm delete-policy-btn"
+                                            data-policy-id="{{ up.id }}"
+                                            data-policy-name="{{ up.policy.name }}">
+                                        <i class="fas fa-trash-alt"></i> Delete
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center py-5">
+                                    <div class="alert alert-info d-inline-block">
+                                        {% if request.GET %}
+                                            No policies found matching your filters.
+                                            <a href="{% url 'admin_panel:admin_policy_management' %}" class="alert-link ms-1">Clear filters</a>
+                                        {% else %}
+                                            No policies found.
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editPolicyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Edit User Policy</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" name="user_policy_id" id="editPolicyHiddenId">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Policy ID (Read-only)</label>
+                            <input type="text" class="form-control bg-light" id="editPolicyIdDisplay" readonly>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Policy Name</label>
+                            <input type="text" class="form-control" name="policy_name" id="editPolicyName" placeholder="Policy Name" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Premium (₹)</label>
+                            <input type="number" class="form-control" name="premium" id="editPremium" placeholder="Enter Amount" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" name="status" id="editStatus">
+                                <option value="ACTIVE">ACTIVE</option>
+                                <option value="INACTIVE">INACTIVE</option>
+                                <option value="PENDING">PENDING</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" id="editDescription" rows="3" placeholder="Policy Description" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" name="update_user_policy" class="btn btn-primary">Update Policy</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deletePolicyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Confirm Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>Are you sure you want to remove the policy <strong id="deletePolicyNameDisplay"></strong>?</p>
+                    <input type="hidden" name="user_policy_id" id="deletePolicyId">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="delete_user_policy" class="btn btn-danger">Confirm Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Filter section styling */
+    .filter-section .form-control-sm {
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .filter-section .form-select-sm {
+        font-size: 0.875rem;
+        padding: 0.25rem 2.25rem 0.25rem 0.5rem;
+    }
+
+    .filter-section .input-group-sm {
+        flex-wrap: nowrap;
+    }
+
+    .filter-section .input-group-text {
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .filter-section .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    /* Responsive adjustments for filter section */
+    @media (max-width: 768px) {
+        .filter-section .row {
+            row-gap: 0.5rem;
+        }
+
+        .filter-section .col-md-3,
+        .filter-section .col-md-4,
+        .filter-section .col-lg-2,
+        .filter-section .col-lg-3 {
+            padding-bottom: 0.5rem;
+        }
+
+        .filter-section .form-label {
+            margin-bottom: 0.25rem;
+            font-size: 0.8rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .filter-section .input-group {
+            flex-wrap: wrap;
+        }
+
+        .filter-section .input-group input {
+            width: 48%;
+            margin-bottom: 0.25rem;
+        }
+
+        .filter-section .input-group .input-group-text {
+            width: 4%;
+            min-width: 30px;
+            justify-content: center;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Toggle Logic
+        const addBtn = document.getElementById('addPolicyBtn');
+        const formDiv = document.getElementById('addPolicyForm');
+        const cancelBtn = document.getElementById('cancelAddBtn');
+
+        if(addBtn) {
+            addBtn.addEventListener('click', () => {
+                formDiv.style.display = (formDiv.style.display === 'none') ? 'block' : 'none';
+            });
+        }
+        if(cancelBtn) {
+            cancelBtn.addEventListener('click', () => { formDiv.style.display = 'none'; });
+        }
+
+        // Edit Modal Logic
+        const editModalEl = document.getElementById('editPolicyModal');
+        const editModal = new bootstrap.Modal(editModalEl);
+
+        document.querySelectorAll('.edit-policy-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.getElementById('editPolicyHiddenId').value = this.dataset.policyId;
+                document.getElementById('editPolicyIdDisplay').value = this.dataset.policyDisplayId;
+                document.getElementById('editPolicyName').value = this.dataset.policyName;
+                document.getElementById('editDescription').value = this.dataset.policyDescription;
+                document.getElementById('editPremium').value = this.dataset.policyPremium;
+                document.getElementById('editStatus').value = this.dataset.policyStatus;
+                editModal.show();
+            });
+        });
+
+        // Delete Modal Logic
+        const deleteModalEl = document.getElementById('deletePolicyModal');
+        const deleteModal = new bootstrap.Modal(deleteModalEl);
+
+        document.querySelectorAll('.delete-policy-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.getElementById('deletePolicyId').value = this.dataset.policyId;
+                document.getElementById('deletePolicyNameDisplay').textContent = this.dataset.policyName;
+                deleteModal.show();
+            });
+        });
+    });
+</script>
+{% endblock %}

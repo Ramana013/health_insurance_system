@@ -1,0 +1,994 @@
+{% extends 'users/base.html' %}
+{% block content %}
+    {% include 'users/includes/sidebar.html' %}
+
+<div class="main-content" id="main-content" style="margin-top:70px;">
+    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
+        <div class="container-fluid px-4 py-2">
+            <button class="btn btn-outline-secondary d-md-none me-3" id="mobileToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h4 class="mb-0 text-primary">All Submitted Feedbacks</h4>
+            <div class="d-flex gap-2">
+                <a href="{% url 'feedback_support:dashboard' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-dashboard me-1"></i> Dashboard
+                </a>
+                <a href="{% url 'feedback_support:submit_feedback' %}" class="btn btn-primary">
+                    <i class="fas fa-plus-circle me-1"></i> Submit Feedback
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Content area -->
+    <div class="content-body p-1 p-md-4">
+        <!-- Search and Filter Section -->
+        <div class="card shadow border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <h6 class="mb-0"><i class="fas fa-filter me-2"></i>Filter & Search</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-8">
+                        <form method="GET" class="d-flex">
+                            <div class="input-group">
+                                <input type="text" name="search" class="form-control"
+                                       placeholder="Search by Ticket ID, Description, Category..."
+                                       value="{{ search_query|default:'' }}">
+                                <button type="submit" class="btn btn-outline-primary">
+                                    <i class="fas fa-search"></i> Search
+                                </button>
+                                {% if search_query %}
+                                <a href="?" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-flex flex-wrap justify-content-end gap-2">
+                            <div class="btn-group" role="group">
+                                <a href="?status=Open"
+                                   class="btn {% if status_filter == 'Open' %}btn-warning{% else %}btn-outline-warning{% endif %} position-relative">
+                                    Open
+                                    {% if open_count > 0 %}
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                        {{ open_count }}
+                                        <span class="visually-hidden">open feedbacks</span>
+                                    </span>
+                                    {% endif %}
+                                </a>
+                                <a href="?status=Under Review"
+                                   class="btn {% if status_filter == 'Under Review' %}btn-info{% else %}btn-outline-info{% endif %} position-relative">
+                                    Review
+                                    {% if review_count > 0 %}
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                        {{ review_count }}
+                                        <span class="visually-hidden">under review feedbacks</span>
+                                    </span>
+                                    {% endif %}
+                                </a>
+                                <a href="?status=Closed"
+                                   class="btn {% if status_filter == 'Closed' %}btn-success{% else %}btn-outline-success{% endif %} position-relative">
+                                    Closed
+                                    {% if closed_count > 0 %}
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                        {{ closed_count }}
+                                        <span class="visually-hidden">closed feedbacks</span>
+                                    </span>
+                                    {% endif %}
+                                </a>
+                                <a href="?" class="btn btn-outline-primary">
+                                    All ({{ total_count }})
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Table Card -->
+        <div class="card shadow border-0">
+            <div class="card-header bg-primary text-white py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-list-alt me-2"></i>All Submitted Feedbacks</h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-light text-primary fs-6">
+                            {{ feedbacks.count }} Feedbacks
+                        </span>
+                        {% if search_query %}
+                        <span class="badge bg-info">
+                            Search: "{{ search_query }}"
+                        </span>
+                        {% endif %}
+                        {% if status_filter %}
+                        <span class="badge bg-warning">
+                            Status: {{ status_filter }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if feedbacks %}
+                <div class="table-responsive table-scroll-container p-2" style="overflow-x: auto;">
+                    <table class="table table-striped align-middle mb-0">
+                        <thead class="table-dark" style="position: sticky; top: 0; z-index: 5;">
+                            <tr>
+                                <th>Ticket ID</th>
+                                <th>Category</th>
+                                <th>Description</th>
+                                <th>Status</th>
+                                <th>Policy</th>
+                                <th>Network</th>
+                                <th>Created On</th>
+                                <th>Admin Comments</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for feedback in feedbacks %}
+                            <tr class="feedback-row" data-ticket-id="{{ feedback.ticket_id }}">
+                                <td class="fw-bold">
+                                    <div class="d-flex align-items-center">
+                                        <span>{{ feedback.ticket_id }}</span>
+                                        {% if feedback.admin_comments_count > 0 %}
+                                        <span class="badge bg-danger rounded-pill ms-2" title="Admin Comments">
+                                            {{ feedback.admin_comments_count }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ feedback.category }}</span>
+                                </td>
+                                <td class="small">
+                                    <div class="feedback-description">
+                                        {{ feedback.description|truncatechars:40 }}
+                                        {% if feedback.description|length > 40 %}
+                                        <button class="btn btn-link btn-sm p-0 ms-1 view-more-btn"
+                                                data-description="{{ feedback.description }}"
+                                                data-ticket="{{ feedback.ticket_id }}">
+                                            <small>View More</small>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge rounded-pill
+                                        {% if feedback.status == 'Open' %}bg-warning
+                                        {% elif feedback.status == 'Closed' %}bg-success
+                                        {% else %}bg-info{% endif %}">
+                                        {{ feedback.status }}
+                                    </span>
+                                </td>
+                                <td>{{ feedback.policy_name.name }}</td>
+                                <td>
+                                    {% if feedback.network_provider %}
+                                    <span class="badge bg-info text-dark">{{ feedback.network_provider.name|truncatechars:15 }}</span>
+                                    {% else %}
+                                    <span class="text-muted small">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="small">{{ feedback.created_on|date:"M d, Y" }}</td>
+                                <td>
+                                    {% if feedback.latest_admin_comment %}
+                                    <div class="admin-comment-preview">
+                                        <div class="d-flex align-items-center mb-1">
+                                            <i class="fas fa-user-shield text-primary me-1 small"></i>
+                                            <small class="text-muted">{{ feedback.latest_admin_comment.created_at|date:"M d, H:i" }}</small>
+                                        </div>
+                                        <div class="small text-truncate" style="max-width: 150px;">
+                                            {{ feedback.latest_admin_comment.comment|truncatechars:40 }}
+                                        </div>
+                                        {% if feedback.latest_admin_comment.comment|length > 40 or feedback.admin_comments_count > 1 %}
+                                        <button class="btn btn-link btn-sm p-0 view-admin-comments-btn"
+                                                data-ticket-id="{{ feedback.ticket_id }}"
+                                                title="View all admin comments">
+                                            <small>
+                                                {% if feedback.admin_comments_count > 1 %}
+                                                View all {{ feedback.admin_comments_count }} comments
+                                                {% else %}
+                                                View full comment
+                                                {% endif %}
+                                            </small>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                    {% else %}
+                                    <span class="text-muted small">No comments yet</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group gap-1" role="group">
+                                        <a href="{% url 'feedback_support:view_feedback' feedback.ticket_id %}"
+                                           class="btn btn-outline-info btn-sm me-1"
+                                           title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if feedback.status != 'Closed' %}
+                                        <a href="{% url 'feedback_support:edit_feedback' feedback.ticket_id %}"
+                                           class="btn btn-warning btn-sm"
+                                           title="Edit Feedback">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% endif %}
+                                        <button class="btn btn-outline-success btn-sm view-comments-btn"
+                                                data-ticket-id="{{ feedback.ticket_id }}"
+                                                title="View Comments">
+                                            <i class="fas fa-comments"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Summary -->
+                <div class="mt-4">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="text-muted small">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Showing {{ feedbacks.count }} feedback{{ feedbacks.count|pluralize }}
+                                {% if search_query %}
+                                matching "{{ search_query }}"
+                                {% endif %}
+                                {% if status_filter %}
+                                with status: {{ status_filter }}
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <div class="small">
+                                {% if feedbacks.has_other_pages %}
+                                <span class="text-muted">Page {{ feedbacks.number }} of {{ feedbacks.paginator.num_pages }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination (if enabled) -->
+                {% if feedbacks.has_other_pages %}
+                <nav aria-label="Page navigation" class="mt-3">
+                    <ul class="pagination justify-content-center">
+                        {% if feedbacks.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ feedbacks.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" aria-label="Previous">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in feedbacks.paginator.page_range %}
+                            {% if feedbacks.number == num %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > feedbacks.number|add:-3 and num < feedbacks.number|add:3 %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if feedbacks.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ feedbacks.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}" aria-label="Next">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+                {% else %}
+                <!-- Empty State -->
+                <div class="text-center py-5">
+                    <div class="empty-state">
+                        <i class="fas fa-comments fa-4x text-gray-300 mb-4"></i>
+                        <h4 class="text-gray-500 mb-3">No Feedbacks Found</h4>
+                        <p class="text-gray-500 mb-4">
+                            {% if search_query %}
+                            No feedbacks match your search criteria "{{ search_query }}".
+                            {% elif status_filter %}
+                            No feedbacks with status "{{ status_filter }}".
+                            {% else %}
+                            No feedbacks have been submitted yet.
+                            {% endif %}
+                        </p>
+                        <a href="{% url 'feedback_support:submit_feedback' %}" class="btn btn-primary">
+                            <i class="fas fa-plus-circle me-1"></i> Submit Your First Feedback
+                        </a>
+                        <a href="?" class="btn btn-outline-secondary ms-2">
+                            <i class="fas fa-redo me-1"></i> Clear Filters
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Description View Modal -->
+<div class="modal fade" id="descriptionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-align-left me-2"></i>Feedback Description
+                    <span class="badge bg-light text-dark ms-2" id="modalTicketBadge"></span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label text-muted small mb-1">Ticket ID</label>
+                    <p class="fw-bold" id="modalTicketId"></p>
+                </div>
+                <div>
+                    <label class="form-label text-muted small mb-1">Full Description</label>
+                    <div class="p-3 bg-light rounded" id="modalDescription" style="white-space: pre-wrap; max-height: 300px; overflow-y: auto;"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Admin Comments Modal -->
+<div class="modal fade" id="adminCommentsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-comments me-2"></i>Comments
+                    <span class="badge bg-light text-dark ms-2" id="modalCommentsTicketBadge"></span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label text-muted small mb-1">Ticket ID</label>
+                    <p class="fw-bold" id="modalCommentsTicketId"></p>
+                </div>
+
+                <div id="commentsList" class="comments-container" style="max-height: 400px; overflow-y: auto; padding: 10px;">
+                    <!-- Comments will be loaded here via AJAX -->
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Loading comments...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Close
+                </button>
+                <a href="#" id="viewFeedbackLink" class="btn btn-primary">
+                    <i class="fas fa-eye me-1"></i> View Full Details
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Reset and base styles */
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        overflow-x: hidden;
+        padding-top: 0 !important;
+    }
+
+    /* Main wrapper */
+    #wrapper {
+        display: flex;
+        min-height: 100%;
+        background: #f4f7f6;
+        margin-top: 70px;
+    }
+
+    /* Main content area */
+    .main-content {
+        flex: 1;
+        margin-left: 250px;
+        transition: all 0.3s ease;
+        background: #f4f7f6;
+        display: flex;
+        flex-direction: column;
+        width: calc(100% - 250px);
+        min-height: 100vh;
+        position: relative;
+        padding-top: 0;
+    }
+
+    /* Ensure navbar is visible */
+    .navbar {
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+        border-bottom: 1px solid #dee2e6 !important;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
+
+    /* Content area spacing */
+    .content-body {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        margin-top: 60px;
+    }
+
+    /* Table container */
+    .table-scroll-container {
+        background: white;
+        border-radius: 0 0 8px 8px;
+        overflow: auto;
+    }
+
+    /* Table responsive styling */
+    table {
+        width: 100% !important;
+        min-width: 1200px;
+        border-collapse: collapse;
+    }
+
+    /* Table cell padding for mobile */
+    th, td {
+        padding: 12px 8px !important;
+        vertical-align: middle !important;
+        white-space: nowrap;
+    }
+
+    /* When sidebar is closed */
+    .sidebar-closed ~ .main-content,
+    .sidebar.collapsed ~ .main-content {
+        margin-left: 50px !important;
+        width: 100% !important;
+    }
+
+    /* Modal styling */
+    .modal-content {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .modal-header {
+        padding: 1rem 1.5rem;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #dee2e6;
+    }
+
+    /* Button hover effects */
+    .btn-outline-info:hover {
+        background-color: #0dcaf0;
+        color: white;
+    }
+
+    .btn-warning:hover {
+        background-color: #e0a800;
+        border-color: #d39e00;
+        color: #212529;
+    }
+
+    .btn-outline-success:hover {
+        background-color: #198754;
+        color: white;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 992px) {
+        .main-content {
+            margin-left: 50px !important;
+            width: 100% !important;
+        }
+
+        .content-body {
+            margin-top: 70px;
+            padding: 10px;
+        }
+
+        table {
+            min-width: 1000px;
+        }
+
+        th, td {
+            padding: 10px 6px !important;
+            font-size: 14px;
+        }
+
+        .btn-sm {
+            padding: 5px 10px !important;
+            font-size: 12px;
+        }
+
+        .card-header {
+            flex-direction: column;
+            gap: 10px;
+            text-align: center;
+        }
+
+        .admin-comment-preview .small {
+            max-width: 120px !important;
+        }
+    }
+
+    @media (max-width: 768px) {
+        th:nth-child(6), td:nth-child(6),
+        th:nth-child(7), td:nth-child(7) {
+            display: none;
+        }
+
+        table {
+            min-width: 800px;
+        }
+
+        .content-body {
+            margin-top: 70px;
+            padding: 8px;
+        }
+
+        .card-header h5 {
+            font-size: 1.1rem;
+        }
+
+        .modal-dialog {
+            margin: 0.5rem;
+        }
+
+        .admin-comment-preview .small {
+            max-width: 100px !important;
+        }
+
+        .feedback-description {
+            max-width: 150px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        th:nth-child(1), td:nth-child(1) {
+            max-width: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        th:nth-child(5), td:nth-child(5),
+        th:nth-child(8), td:nth-child(8) {
+            display: none;
+        }
+
+        table {
+            min-width: 600px;
+        }
+
+        .btn {
+            padding: 4px 8px !important;
+            font-size: 11px;
+            margin-bottom: 2px;
+        }
+
+        .content-body {
+            padding: 5px;
+        }
+
+        td.text-center .btn {
+            display: inline-block;
+            width: auto;
+            margin: 2px;
+        }
+
+        .modal-body {
+            padding: 1rem;
+        }
+
+        .modal-footer .btn {
+            flex: 1;
+            margin: 0 2px;
+        }
+
+        .admin-comment-preview {
+            display: none;
+        }
+
+        .btn-group.gap-1 {
+            gap: 2px !important;
+        }
+    }
+
+    /* Scrollbar styling */
+    .table-scroll-container::-webkit-scrollbar {
+        height: 8px;
+        width: 8px;
+    }
+
+    .table-scroll-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .table-scroll-container::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+
+    .table-scroll-container::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    /* Fix for empty state on mobile */
+    @media (max-width: 576px) {
+        .empty-state {
+            padding: 20px 10px;
+        }
+
+        .empty-state h4 {
+            font-size: 1.2rem;
+        }
+
+        .empty-state p {
+            font-size: 0.9rem;
+        }
+    }
+
+    /* Animation for loading */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    #commentsList > * {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    /* Input group styling */
+    .input-group-text {
+        background-color: #f8f9fa;
+        border-color: #dee2e6;
+    }
+
+    /* Badge styling */
+    .badge {
+        font-weight: 500;
+    }
+
+    .badge.rounded-pill {
+        font-size: 0.7em;
+        padding: 2px 6px;
+    }
+
+    .position-relative .badge {
+        font-size: 0.6em;
+        padding: 2px 4px;
+    }
+
+    /* Comments styling */
+    .comments-container {
+        background: white;
+        border-radius: 5px;
+    }
+
+    .comment-item {
+        padding: 12px 0;
+        border-bottom: 1px solid #eee;
+        margin: 0;
+    }
+
+    .comment-item:last-child {
+        border-bottom: none;
+    }
+
+    .comment-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .comment-user-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .comment-content {
+        white-space: pre-wrap;
+        line-height: 1.5;
+        padding: 0;
+        margin: 0;
+        font-size: 14px;
+        color: #333;
+    }
+
+    .comment-time {
+        font-size: 0.8em;
+        color: #666;
+    }
+
+    .admin-badge {
+        background-color: #0d6efd;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.75em;
+        font-weight: 500;
+    }
+
+    .user-badge {
+        background-color: #6c757d;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.75em;
+        font-weight: 500;
+    }
+
+    .comment-divider {
+        height: 1px;
+        background: #eee;
+        margin: 10px 0;
+    }
+
+    /* Admin comment preview */
+    .admin-comment-preview {
+        background-color: #f8f9fa;
+        border-left: 3px solid #0d6efd;
+        padding: 8px;
+        border-radius: 4px;
+    }
+
+    .text-truncate {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+</style>
+
+<script>
+// Event listener for DOM content loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle sidebar toggle
+    const mobileToggle = document.getElementById('mobileToggle');
+    if (mobileToggle) {
+        mobileToggle.addEventListener('click', function() {
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+
+            if (sidebar && mainContent) {
+                if (sidebar.classList.contains('show') || sidebar.style.display !== 'none') {
+                    // Sidebar is open, close it
+                    sidebar.classList.remove('show');
+                    sidebar.style.display = 'none';
+                    mainContent.style.marginLeft = '50px';
+                    mainContent.style.width = 'calc(100% - 50px)';
+                } else {
+                    // Sidebar is closed, open it
+                    sidebar.classList.add('show');
+                    sidebar.style.display = 'block';
+                    mainContent.style.marginLeft = '250px';
+                    mainContent.style.width = 'calc(100% - 250px)';
+                }
+            }
+        });
+    }
+
+    // Adjust table container height
+    function adjustTableHeight() {
+        const tableContainer = document.querySelector('.table-scroll-container');
+        if (tableContainer) {
+            const windowHeight = window.innerHeight;
+            const navbarHeight = document.querySelector('.navbar')?.offsetHeight || 60;
+            const cardHeaderHeight = document.querySelector('.card-header')?.offsetHeight || 60;
+            const filterHeight = document.querySelector('.card.mb-4')?.offsetHeight || 0;
+            const calculatedHeight = windowHeight - navbarHeight - cardHeaderHeight - filterHeight - 120;
+            tableContainer.style.maxHeight = Math.max(300, calculatedHeight) + 'px';
+        }
+    }
+
+    // Initial adjustment
+    setTimeout(adjustTableHeight, 100);
+
+    // Adjust on resize
+    window.addEventListener('resize', adjustTableHeight);
+
+    // Adjust on sidebar toggle
+    if (mobileToggle) {
+        mobileToggle.addEventListener('click', function() {
+            setTimeout(adjustTableHeight, 300);
+        });
+    }
+
+    // View More functionality for descriptions
+    document.querySelectorAll('.view-more-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const description = this.getAttribute('data-description');
+            const ticketId = this.getAttribute('data-ticket') || this.closest('tr').querySelector('td:first-child').textContent;
+
+            document.getElementById('modalTicketId').textContent = ticketId;
+            document.getElementById('modalTicketBadge').textContent = ticketId;
+            document.getElementById('modalDescription').textContent = description;
+
+            const modal = new bootstrap.Modal(document.getElementById('descriptionModal'));
+            modal.show();
+        });
+    });
+
+    // View Admin Comments functionality
+    document.querySelectorAll('.view-admin-comments-btn, .view-comments-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const ticketId = this.getAttribute('data-ticket-id') ||
+                            this.closest('tr').getAttribute('data-ticket-id') ||
+                            this.closest('tr').querySelector('td:first-child').textContent.trim();
+
+            document.getElementById('modalCommentsTicketId').textContent = ticketId;
+            document.getElementById('modalCommentsTicketBadge').textContent = ticketId;
+
+            // Set the view details link
+            const viewFeedbackLink = document.getElementById('viewFeedbackLink');
+            viewFeedbackLink.href = "{% url 'feedback_support:view_feedback' 'TEMP' %}".replace('TEMP', ticketId);
+
+            // Load comments via AJAX
+            loadAdminComments(ticketId);
+
+            const modal = new bootstrap.Modal(document.getElementById('adminCommentsModal'));
+            modal.show();
+        });
+    });
+
+    // Function to load admin comments via AJAX - Plain text display
+    function loadAdminComments(ticketId) {
+        const commentsList = document.getElementById('commentsList');
+        commentsList.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 text-muted">Loading comments...</p>
+            </div>
+        `;
+
+        // Fetch comments from server - Update this URL to match your actual endpoint
+        fetch(`/feedback_support/ajax/comments/${ticketId}/`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success && data.comments && data.comments.length > 0) {
+                    renderCommentsPlainText(data.comments);
+                } else {
+                    commentsList.innerHTML = `
+                        <div class="text-center py-4">
+                            <i class="fas fa-comment-slash fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">No comments yet</p>
+                            <p class="small text-muted">No one has commented on this feedback yet.</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading comments:', error);
+                commentsList.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-exclamation-triangle fa-2x text-danger mb-3"></i>
+                        <p class="text-danger">Error loading comments</p>
+                        <p class="small text-muted">Unable to load comments at this time.</p>
+                    </div>
+                `;
+            });
+    }
+
+    // Function to render comments in plain text format - NO CARDS
+    function renderCommentsPlainText(comments) {
+        const commentsList = document.getElementById('commentsList');
+        let html = '';
+
+        comments.forEach((comment, index) => {
+            const isAdmin = comment.is_admin || comment.user_type === 'admin';
+            const userBadge = isAdmin ?
+                `<span class="admin-badge">Admin</span>` :
+                `<span class="user-badge">User</span>`;
+
+            const userName = comment.user || 'User';
+            const commentTime = comment.timestamp || comment.created_at || '';
+            const commentText = comment.comment || '';
+
+            html += `
+                <div class="comment-item">
+                    <div class="comment-header">
+                        <div class="comment-user-info">
+                            ${userBadge}
+                            <strong>${userName}</strong>
+                        </div>
+                        <small class="comment-time">${commentTime}</small>
+                    </div>
+                    <p class="comment-content">${commentText}</p>
+                    ${index < comments.length - 1 ? '<div class="comment-divider"></div>' : ''}
+                </div>
+            `;
+        });
+
+        commentsList.innerHTML = html;
+    }
+
+    // Make table rows clickable (view details)
+    document.querySelectorAll('.feedback-row').forEach(row => {
+        row.addEventListener('click', function(e) {
+            if (!e.target.closest('.btn') && !e.target.closest('a')) {
+                const ticketId = this.getAttribute('data-ticket-id') || this.querySelector('td:first-child').textContent.trim();
+                // Using URL from template - this should match your URL pattern
+                window.location.href = "{% url 'feedback_support:view_feedback' 'TEMP' %}".replace('TEMP', ticketId);
+            }
+        });
+        row.style.cursor = 'pointer';
+    });
+
+    // Search form functionality
+    const searchForm = document.querySelector('form[method="GET"]');
+    if (searchForm) {
+        const searchInput = searchForm.querySelector('input[name="search"]');
+        const searchBtn = searchForm.querySelector('button[type="submit"]');
+
+        searchForm.addEventListener('submit', function() {
+            if (searchBtn) {
+                const originalHtml = searchBtn.innerHTML;
+                searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                searchBtn.disabled = true;
+
+                // Re-enable after 2 seconds if still disabled
+                setTimeout(() => {
+                    if (searchBtn.disabled) {
+                        searchBtn.innerHTML = originalHtml;
+                        searchBtn.disabled = false;
+                    }
+                }, 2000);
+            }
+        });
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+            e.preventDefault();
+            const searchInput = document.querySelector('input[name="search"]');
+            if (searchInput) {
+                searchInput.focus();
+                searchInput.select();
+            }
+        }
+    });
+});
+</script>
+
+<!-- Add Bootstrap JS if not already included in base.html -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

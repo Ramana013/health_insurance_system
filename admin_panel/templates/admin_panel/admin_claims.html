@@ -1,0 +1,582 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block content %}
+<div id="wrapper">
+    {% include 'admin_panel/includes/admin_sidebar.html' %}
+
+    <div class="main-content" id="main-content" style="margin-top:60px;">
+        <!-- Status Popup Toast -->
+        <div id="statusPopup" class="position-fixed top-0 end-0 p-3" style="z-index: 2000; display: none;">
+            <div class="toast show align-items-center text-white bg-success border-0 shadow-lg" role="alert">
+                <div class="d-flex">
+                    <div class="toast-body" id="popupMessage">
+                        Status updated successfully!
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="closePopup()"></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Bar -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm">
+            <div class="container-fluid px-4 py-2">
+                <button class="btn btn-outline-secondary d-md-none me-3" id="mobileToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h4 class="mb-0 text-primary">Admin Claims Management</h4>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="content-body p-1 p-md-4">
+            <!-- Search and Filter Section -->
+            <div class="card shadow border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="mb-0"><i class="fas fa-filter me-2"></i>Filter & Search Claims</h6>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="" class="row g-3 align-items-end">
+                        <!-- Claim ID Search -->
+                        <div class="col-md-3 col-lg-2">
+                            <label class="form-label small mb-1">Claim ID</label>
+                            <input type="text" name="claim_id" class="form-control form-control-sm"
+                                   placeholder="Enter Claim ID" value="{{ request.GET.claim_id|default:'' }}">
+                        </div>
+
+                        <!-- User Search -->
+                        <div class="col-md-3 col-lg-2">
+                            <label class="form-label small mb-1">User</label>
+                            <input type="text" name="user" class="form-control form-control-sm"
+                                   placeholder="Search user..." value="{{ request.GET.user|default:'' }}">
+                        </div>
+
+                        <!-- Policy Name Search -->
+                        <div class="col-md-3 col-lg-2">
+                            <label class="form-label small mb-1">Policy Name</label>
+                            <input type="text" name="policy_name" class="form-control form-control-sm"
+                                   placeholder="Policy name..." value="{{ request.GET.policy_name|default:'' }}">
+                        </div>
+
+                        <!-- Claim Amount Range -->
+                        <div class="col-md-4 col-lg-3">
+                            <label class="form-label small mb-1">Claim Amount</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" name="amount_min" class="form-control"
+                                       placeholder="Min" value="{{ request.GET.amount_min|default:'' }}">
+                                <span class="input-group-text">to</span>
+                                <input type="number" name="amount_max" class="form-control"
+                                       placeholder="Max" value="{{ request.GET.amount_max|default:'' }}">
+                            </div>
+                        </div>
+
+                        <!-- Status Filter -->
+                        <div class="col-md-3 col-lg-2">
+                            <label class="form-label small mb-1">Status</label>
+                            <select name="status" class="form-select form-select-sm">
+                                <option value="">All Status</option>
+                                <option value="Submitted" {% if request.GET.status == "Submitted" %}selected{% endif %}>Submitted</option>
+                                <option value="Under Review" {% if request.GET.status == "Under Review" %}selected{% endif %}>Under Review</option>
+                                <option value="Approved" {% if request.GET.status == "Approved" %}selected{% endif %}>Approved</option>
+                                <option value="Rejected" {% if request.GET.status == "Rejected" %}selected{% endif %}>Rejected</option>
+                            </select>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="col-md-4 col-lg-1">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary btn-sm w-100">
+                                    <i class="fas fa-search me-1"></i> Search
+                                </button>
+                                <a href="{% url 'admin_panel:admin_claims' %}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow border-0">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-file-contract me-2"></i>Claim Submitted Policies</h5>
+                    <span class="text-white">Welcome, Admin!</span>
+                </div>
+
+                <!-- Claims Table -->
+                <div class="claims-table-wrapper p-3">
+                    <div class="table-responsive table-scroll-container">
+                        <table class="table table-bordered table-hover align-middle mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Claim Id</th>
+                                    <th>User</th>
+                                    <th>Policy Name</th>
+                                    <th>Filed Date</th>
+                                    <th>Claim Amount</th>
+                                    <th>Status & Management</th>
+                                    <th class="text-center">Admin Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for claim in submitted_claims %}
+                                <tr>
+                                    <td class="fw-bold">{{ claim.claim_id }}</td>
+                                    <td>{{ claim.user_policy.user.username|default:"N/A" }}</td>
+                                    <td><strong>{{ claim.user_policy.policy.name|default:"N/A" }}</strong></td>
+                                    <td>{{ claim.filed_date|date:"d M Y H:i" }}</td>
+                                    <td><span class="badge bg-info text-dark">₹ {{ claim.claim_amount }}</span></td>
+
+                                    <td>
+                                        <div class="mb-2">
+                                            {% if claim.status == 'APPROVED' or claim.status == 'Approved' %}
+                                            <span class="badge bg-success">Approved</span>
+                                            {% elif claim.status == 'REJECTED' or claim.status == 'Rejected' %}
+                                            <span class="badge bg-danger">Rejected</span>
+                                            {% elif claim.status == 'UNDER_REVIEW' or claim.status == 'Under Review' %}
+                                            <span class="badge bg-warning text-dark">Under Review</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Submitted</span>
+                                            {% endif %}
+                                        </div>
+
+                                        <!-- Status Management Buttons -->
+                                        <div class="status-management-buttons">
+                                            {% if claim.status == 'SUBMITTED' or claim.status == 'Submitted' or claim.status == 'submitted' %}
+                                            <!-- For Submitted claims: Show Under Review button -->
+                                            <div class="d-flex flex-wrap gap-1">
+                                                <button class="btn btn-outline-warning btn-sm flex-grow-1" onclick="updateStatus('{{ claim.claim_id }}', 'Under Review')">
+                                                    <i class="fas fa-search me-1"></i> Under Review
+                                                </button>
+                                                <button class="btn btn-outline-danger btn-sm flex-grow-1" data-bs-toggle="modal" data-bs-target="#commentModal" data-claim-id="{{ claim.claim_id }}" data-action-type="Reject">
+                                                    <i class="fas fa-times-circle me-1"></i> Reject
+                                                </button>
+                                            </div>
+                                            {% elif claim.status == 'UNDER_REVIEW' or claim.status == 'Under Review' or claim.status == 'under review' %}
+                                            <!-- For Under Review claims: Show Approve and Reject buttons -->
+                                            <div class="d-flex flex-wrap gap-1">
+                                                <button class="btn btn-outline-success btn-sm flex-grow-1" onclick="updateStatus('{{ claim.claim_id }}', 'Approved')">
+                                                    <i class="fas fa-check me-1"></i> Approve
+                                                </button>
+                                                <button class="btn btn-outline-danger btn-sm flex-grow-1" data-bs-toggle="modal" data-bs-target="#commentModal" data-claim-id="{{ claim.claim_id }}" data-action-type="Reject">
+                                                    <i class="fas fa-times-circle me-1"></i> Reject
+                                                </button>
+                                            </div>
+                                            {% elif claim.status == 'APPROVED' or claim.status == 'Approved' or claim.status == 'approved' or claim.status == 'REJECTED' or claim.status == 'Rejected' or claim.status == 'rejected' %}
+                                            <!-- For Approved/Rejected claims: No action buttons -->
+                                            <div class="text-muted small">
+                                                <i class="fas fa-info-circle"></i> Status finalized
+                                            </div>
+                                            {% else %}
+                                            <!-- Fallback for any other status -->
+                                            <div class="d-flex flex-wrap gap-1">
+                                                <button class="btn btn-outline-warning btn-sm flex-grow-1" onclick="updateStatus('{{ claim.claim_id }}', 'Under Review')">
+                                                    <i class="fas fa-search me-1"></i> Under Review
+                                                </button>
+                                                <button class="btn btn-outline-success btn-sm flex-grow-1" onclick="updateStatus('{{ claim.claim_id }}', 'Approved')">
+                                                    <i class="fas fa-check me-1"></i> Approve
+                                                </button>
+                                                <button class="btn btn-outline-danger btn-sm flex-grow-1" data-bs-toggle="modal" data-bs-target="#commentModal" data-claim-id="{{ claim.claim_id }}" data-action-type="Reject">
+                                                    <i class="fas fa-times-circle me-1"></i> Reject
+                                                </button>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+
+                                    <td class="text-center">
+                                        <div class="d-flex justify-content-center gap-2">
+                                            <button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#viewModal{{ claim.claim_id }}">
+                                                <i class="fas fa-eye"></i> View
+                                            </button>
+
+                                            {% if claim.document %}
+                                            <a href="{{ claim.document.url }}" target="_blank" class="btn btn-dark btn-sm">
+                                                <i class="fas fa-file-pdf"></i> Doc
+                                            </a>
+                                            {% else %}
+                                            <button class="btn btn-secondary btn-sm" onclick="alert('No document available for this claim.')">
+                                                <i class="fas fa-exclamation-triangle"></i> No Doc
+                                            </button>
+                                            {% endif %}
+
+                                            <button class="btn btn-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#commentModal" data-claim-id="{{ claim.claim_id }}" data-action-type="Comment">
+                                                <i class="fas fa-comment-dots"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- View Modal for each claim -->
+                                <div class="modal fade" id="viewModal{{ claim.claim_id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-info text-white">
+                                                <h5 class="modal-title">Claim Details: {{ claim.claim_id }}</h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <label class="text-muted small d-block">User</label>
+                                                        <p class="fw-bold">{{ claim.user_policy.user.username|default:"N/A" }}</p>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="text-muted small d-block">Policy</label>
+                                                        <p class="fw-bold">{{ claim.user_policy.policy.name|default:"N/A" }}</p>
+                                                    </div>
+                                                    <div class="col-md-12">
+                                                        <label class="text-muted small d-block">Document Submitted</label>
+                                                        {% if claim.document %}
+                                                        <div class="alert alert-success d-flex align-items-center">
+                                                            <i class="fas fa-file-download me-2"></i>
+                                                            <a href="{{ claim.document.url }}" target="_blank" class="alert-link text-decoration-none">View/Verify Submitted File</a>
+                                                        </div>
+                                                        {% else %}
+                                                        <div class="alert alert-secondary">No document available.</div>
+                                                        {% endif %}
+                                                    </div>
+                                                    {% if claim.comment %}
+                                                    <div class="col-md-12">
+                                                        <label class="text-muted small d-block">Admin Comments</label>
+                                                        <div class="alert alert-info">
+                                                            <i class="fas fa-comment me-2"></i>
+                                                            {{ claim.comment }}
+                                                        </div>
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Comment/Reject Modal -->
+<div class="modal fade" id="commentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Action for <span id="claimIdDisplay"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="commentForm">
+                    {% csrf_token %}
+                    <input type="hidden" id="modalClaimId">
+                    <input type="hidden" id="modalActionType">
+                    <div class="mb-3">
+                        <label for="adminComment" class="form-label">Comment / Reason</label>
+                        <textarea class="form-control" id="adminComment" rows="4" placeholder="Enter comments here..."></textarea>
+                        <div class="form-text" id="commentHelp">This comment will be saved with the claim.</div>
+                    </div>
+                    <div class="modal-footer px-0 pb-0 mt-3">
+                        <button type="submit" class="btn btn-primary w-100">Submit Action</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+    // Function to send status update to server
+    async function updateStatus(claimId, newStatus) {
+        try {
+            // Get CSRF token
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            // Show loading indicator
+            const button = event.target;
+            const originalButtonText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            button.disabled = true;
+
+            console.log('Updating claim:', claimId, 'to status:', newStatus);
+
+            // Use hardcoded URL - adjust based on your Django URL configuration
+            // Try these URLs one by one if first doesn't work:
+            const updateUrl = '/admin_panel/update-claim-status/'; // Most common
+
+            // Alternative URLs:
+            // const updateUrl = '/admin_panel/claims/update-status/';
+            // const updateUrl = '/update-claim-status/';
+            // const updateUrl = '/admin/update-claim-status/';
+
+            // Send request to server
+            const response = await fetch(updateUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: new URLSearchParams({
+                    'claim_id': claimId,
+                    'status': newStatus,
+                    'comment': ''
+                })
+            });
+
+            const result = await response.json();
+            console.log('Response:', result);
+
+            // Restore button state
+            button.innerHTML = originalButtonText;
+            button.disabled = false;
+
+            if (result.status === 'success') {
+                showPopup(result.message);
+                // Reload the page after delay to show updated status
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showErrorPopup(result.message || 'Error updating status');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showErrorPopup('Failed to update status. Please try again.');
+
+            // Restore button state on error
+            if (event && event.target) {
+                event.target.innerHTML = originalButtonText;
+                event.target.disabled = false;
+            }
+        }
+    }
+
+    // Function to show success toast notification
+    function showPopup(message) {
+        const popup = document.getElementById('statusPopup');
+        document.getElementById('popupMessage').textContent = message;
+        popup.style.display = 'block';
+        setTimeout(() => {
+            popup.style.display = 'none';
+        }, 3000);
+    }
+
+    // Function to show error notification
+    function showErrorPopup(message) {
+        const popup = document.getElementById('statusPopup');
+        const toast = popup.querySelector('.toast');
+
+        // Change to error style
+        toast.classList.remove('bg-success');
+        toast.classList.add('bg-danger');
+
+        document.getElementById('popupMessage').textContent = message;
+        popup.style.display = 'block';
+
+        setTimeout(() => {
+            popup.style.display = 'none';
+            // Restore success style
+            toast.classList.remove('bg-danger');
+            toast.classList.add('bg-success');
+        }, 4000);
+    }
+
+    function closePopup() {
+        document.getElementById('statusPopup').style.display = 'none';
+    }
+
+    // Form submission handler for comment modal
+    document.getElementById('commentForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const claimId = document.getElementById('modalClaimId').value;
+        const actionType = document.getElementById('modalActionType').value;
+        const adminComment = document.getElementById('adminComment').value;
+
+        // Get submit button
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+
+        // Show loading state
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        submitBtn.disabled = true;
+
+        try {
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            // Use the same URL as above
+            const updateUrl = '/admin_panel/update-claim-status/';
+
+            // Prepare form data
+            const formData = new URLSearchParams({
+                'claim_id': claimId,
+                'comment': adminComment
+            });
+
+            // If action type is "Reject", also update status to REJECTED
+            if (actionType === 'Reject') {
+                formData.append('status', 'Rejected');
+            }
+
+            console.log('Submitting form data:', Object.fromEntries(formData));
+
+            // Send request
+            const response = await fetch(updateUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: formData
+            });
+
+            const result = await response.json();
+            console.log('Response:', result);
+
+            // Restore button state
+            submitBtn.innerHTML = originalBtnText;
+            submitBtn.disabled = false;
+
+            if (result.status === 'success') {
+                showPopup(result.message);
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('commentModal'));
+                if (modal) {
+                    modal.hide();
+                }
+                // Clear form
+                document.getElementById('adminComment').value = '';
+                // Reload page after delay
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showErrorPopup(result.message || 'Error submitting action');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showErrorPopup('Failed to submit. Please check console for details.');
+
+            // Restore button state
+            submitBtn.innerHTML = originalBtnText;
+            submitBtn.disabled = false;
+        }
+    });
+
+    // Modal show event handler
+    document.getElementById('commentModal').addEventListener('show.bs.modal', event => {
+        const button = event.relatedTarget;
+        const claimId = button.getAttribute('data-claim-id');
+        const actionType = button.getAttribute('data-action-type');
+
+        document.getElementById('claimIdDisplay').textContent = claimId;
+        document.getElementById('modalClaimId').value = claimId;
+        document.getElementById('modalActionType').value = actionType;
+
+        // Set appropriate title and placeholder based on action
+        const modalTitle = document.querySelector('#commentModal .modal-title');
+        const commentHelp = document.getElementById('commentHelp');
+
+        if (actionType === 'Reject') {
+            modalTitle.textContent = `Reject Claim ${claimId}`;
+            document.getElementById('adminComment').placeholder = "Enter reason for rejection...";
+            commentHelp.textContent = "This reason will be saved with the claim and shown to the user.";
+        } else {
+            modalTitle.textContent = `Add Comment for Claim ${claimId}`;
+            document.getElementById('adminComment').placeholder = "Enter comments here...";
+            commentHelp.textContent = "This comment will be saved with the claim for internal reference.";
+        }
+    });
+
+    // Mobile sidebar toggle (if needed)
+    document.getElementById('mobileToggle')?.addEventListener('click', function() {
+        document.getElementById('wrapper').classList.toggle('toggled');
+    });
+
+    // Add some CSS for better button display
+    const style = document.createElement('style');
+    style.textContent = `
+        .status-management-buttons .btn {
+            min-width: 120px;
+            margin: 2px 0;
+        }
+        .status-management-buttons .d-flex {
+            flex-wrap: wrap;
+        }
+        @media (max-width: 768px) {
+            .status-management-buttons .btn {
+                min-width: 100px;
+                font-size: 0.8rem;
+                padding: 0.25rem 0.5rem;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+
+<style>
+    /* Filter section styling */
+    .filter-section .form-control-sm {
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .filter-section .form-select-sm {
+        font-size: 0.875rem;
+        padding: 0.25rem 2.25rem 0.25rem 0.5rem;
+    }
+
+    .filter-section .input-group-sm {
+        flex-wrap: nowrap;
+    }
+
+    .filter-section .input-group-text {
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .filter-section .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    /* Responsive adjustments for filter section */
+    @media (max-width: 768px) {
+        .filter-section .row {
+            row-gap: 0.5rem;
+        }
+
+        .filter-section .col-md-3,
+        .filter-section .col-md-4,
+        .filter-section .col-lg-2,
+        .filter-section .col-lg-3 {
+            padding-bottom: 0.5rem;
+        }
+
+        .filter-section .form-label {
+            margin-bottom: 0.25rem;
+            font-size: 0.8rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .filter-section .input-group {
+            flex-wrap: wrap;
+        }
+
+        .filter-section .input-group input {
+            width: 48%;
+            margin-bottom: 0.25rem;
+        }
+
+        .filter-section .input-group .input-group-text {
+            width: 4%;
+            min-width: 30px;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
